@@ -35,7 +35,7 @@ class TestAffiliation:
     argvalues=[
         aastex.Author(
             name="Jane Doe",
-            affiliation=aastex.Affiliation("Fancy University")
+            affiliation=aastex.Affiliation("Fancy University"),
         ),
     ],
 )

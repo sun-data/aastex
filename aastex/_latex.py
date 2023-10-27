@@ -23,7 +23,7 @@ class Affiliation(pylatex.base_classes.LatexObject):
     name: str
     """human-readable name of the organization"""
 
-    def dumps(self)-> str:
+    def dumps(self) -> str:
         return pylatex.Command("affiliation", self.name).dumps()
 
 
