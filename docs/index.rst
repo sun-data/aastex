@@ -37,7 +37,7 @@ Example
     doc.append(abstract)
     doc.append(intro)
 
-    path_pdf = pathlib.Path("an_interesting_article".pdf)
+    path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
 
 .. jupyter-execute::
