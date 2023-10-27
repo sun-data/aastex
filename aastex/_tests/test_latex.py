@@ -101,3 +101,13 @@ class TestAcronym:
 
     def test_dumps(self, a: aastex.Title):
         assert isinstance(a.dumps(), str)
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Abstract(),
+    ],
+)
+class TestAbstract:
+    pass

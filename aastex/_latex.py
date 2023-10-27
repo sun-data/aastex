@@ -7,6 +7,7 @@ __all__ = [
     "Author",
     "Label",
     "Acronym",
+    "Abstract",
 ]
 
 
@@ -100,3 +101,7 @@ class Acronym(pylatex.base_classes.LatexObject):
                 ],
             ).dumps()
         return command
+
+
+class Abstract(pylatex.base_classes.Environment):
+    pass
