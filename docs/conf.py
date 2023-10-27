@@ -96,5 +96,5 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'matplotlib': ('https://matplotlib.org/stable', None),
     'astropy': ('https://docs.astropy.org/en/stable/', None),
-    'named_arrays': ('https://named-arrays.readthedocs.io/en/stable/', None)
+    'pylatex': ('https://jeltef.github.io/PyLaTeX/current/', None)
 }
