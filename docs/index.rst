@@ -12,6 +12,7 @@ Example
     import pathlib
     import pylatex
     import aastex
+    import wand.image
     import IPython
 
     path_pdf = pathlib.Path("_build/html/_images/an_interesting_article")
@@ -44,7 +45,7 @@ Example
     doc.generate_pdf(filepath=str(path_pdf.resolve()))
 
     filename = f"{str(path_pdf.resolve())}.pdf"
-    IPython.display.IFrame(filename, width=900, height=800)
+    wand.image.Image(filename=filename, resolution=100)
 
 |
 

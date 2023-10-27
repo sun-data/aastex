@@ -30,6 +30,7 @@ doc = [
     "ipykernel",
     "jupyter-sphinx",
     "sphinx-favicon",
+    "Wand",
 ]
 
 [project.urls]
