@@ -14,7 +14,7 @@ Example
     import aastex
     import IPython
 
-    path_pdf = pathlib.Path("_build/pdf/an_interesting_article")
+    path_pdf = pathlib.Path("_build/html/_images/an_interesting_article")
 
     title = aastex.Title("An Interesting Article")
 
