@@ -18,6 +18,13 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
 
     title = aastex.Title("An Interesting Article")
 
+    msu = aastex.Affiliation(
+        'Montana State University, Department of Physics, '
+        'P.O. Box 173840, Bozeman, MT 59717, USA'
+    )
+
+    author = aastex.Author('Roy T. Smart', msu),
+
     abstract = aastex.Abstract()
     abstract.escape = False
     abstract.append("Some text summarizing the article. ")
@@ -35,6 +42,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     doc.packages.append(pylatex.Package("lipsum"))
 
     doc.append(title)
+    doc.append(author)
     doc.append(abstract)
     doc.append(intro)
 
@@ -54,7 +62,7 @@ Which generates the following PDF:
     path_pdf_new = path_pdf.rename(path_build / path_pdf.name)
 
     url = f"https://aastex.readthedocs.io/en/latest/{path_pdf.name}"
-    IPython.display.IFrame(url, width=900, height=800)
+    IPython.display.IFrame(url, width=900, height=400)
 
 |
 
