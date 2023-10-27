@@ -6,7 +6,7 @@ import aastex
     argnames="a",
     argvalues=[
         aastex.Title("my fancy paper"),
-    ]
+    ],
 )
 class TestTitle:
     def test_name(self, a: aastex.Title):
