@@ -7,11 +7,6 @@ build:
   apt_packages:
     - graphviz
     - texlive-publishers
-    - libmagickwand-dev
-    - ghostscript
-#  jobs:
-#    post_system_dependencies:
-#      - sed -i 's/^.*policy.*coder.*none.*PDF.*//' /etc/ImageMagick-6/policy.xml
 
 sphinx:
   configuration: docs/conf.py

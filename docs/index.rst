@@ -7,6 +7,8 @@ AASTeX LaTeX package.
 Example
 =======
 
+Here is a simple example showing some of the basic features of :mod:`aastex`.
+
 .. jupyter-execute::
 
     import pathlib
@@ -39,17 +41,19 @@ Example
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
 
+|
+
+Which generates the following PDF:
+
 .. jupyter-execute::
     :hide-code:
 
     import os
 
-    path_build = pathlib.Path(os.environ["READTHEDOCS_OUTPUT"]) / "html"
+    path_build = pathlib.Path(os.environ.get("READTHEDOCS_OUTPUT", "_build")) / "html"
     path_pdf_new = path_pdf.rename(path_build / path_pdf.name)
-    print(path_pdf_new)
 
     url = f"https://aastex.readthedocs.io/en/latest/{path_pdf.name}"
-    print(url)
     IPython.display.IFrame(url, width=900, height=800)
 
 |
