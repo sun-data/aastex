@@ -15,7 +15,7 @@ Example
     import wand.image
     import IPython
 
-    path_pdf = pathlib.Path("_build/html/_images/an_interesting_article")
+    path_pdf = pathlib.Path("_build/html/_static/an_interesting_article")
 
     title = aastex.Title("An Interesting Article")
 
@@ -41,11 +41,14 @@ Example
     doc.append(abstract)
     doc.append(intro)
 
-    path_pdf.mkdir(parents=True, exist_ok=True)
+    path_pdf.parent.mkdir(parents=True, exist_ok=True)
     doc.generate_pdf(filepath=str(path_pdf.resolve()))
 
     filename = f"{str(path_pdf.resolve())}.pdf"
-    wand.image.Image(filename=filename, resolution=100)
+    url = f"https://aastex.readthedocs.io/en/latest/_static/an_interesting_article.pdf"
+    print(url)
+    IPython.display.Image(url=url)
+    #wand.image.Image(filename=filename, resolution=100)
 
 |
 
