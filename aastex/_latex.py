@@ -5,6 +5,7 @@ __all__ = [
     "Title",
     "Affiliation",
     "Author",
+    "Label",
     "Acronym",
 ]
 
@@ -39,6 +40,14 @@ class Author(pylatex.base_classes.LatexObject):
 
     def dumps(self) -> str:
         return pylatex.Command("author", self.name).dumps() + self.affiliation.dumps()
+
+
+@dataclasses.dataclass
+class Label(pylatex.base_classes.LatexObject):
+    name: str
+
+    def dumps(self):
+        return pylatex.Command("label", pylatex.NoEscape(self.name)).dumps()
 
 
 @dataclasses.dataclass
