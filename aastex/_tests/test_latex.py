@@ -48,3 +48,38 @@ class TestAuthor:
 
     def test_dumps(self, a: aastex.Author):
         assert isinstance(a.dumps(), str)
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Acronym(
+            acronym="NASA",
+            name_full="National Aeronautical and Space Administration",
+            plural=True,
+            short=True,
+        )
+    ],
+)
+class TestAcronym:
+    def test_acronym(self, a: aastex.Acronym):
+        assert isinstance(a.acronym, str)
+
+    def test_name_full(self, a: aastex.Acronym):
+        assert isinstance(a.name_full, str)
+
+    def test_name_short(self, a: aastex.Acronym):
+        result = a.name_short
+        if result is not None:
+            assert isinstance(result, str)
+
+    def test_plural(self, a: aastex.Acronym):
+        result = a.plural
+        assert isinstance(result, bool)
+
+    def test_short(self, a: aastex.Acronym):
+        result = a.short
+        assert isinstance(result, bool)
+
+    def test_dumps(self, a: aastex.Title):
+        assert isinstance(a.dumps(), str)

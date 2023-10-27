@@ -5,6 +5,7 @@ __all__ = [
     "Title",
     "Affiliation",
     "Author",
+    "Acronym",
 ]
 
 
@@ -38,3 +39,55 @@ class Author(pylatex.base_classes.LatexObject):
 
     def dumps(self) -> str:
         return pylatex.Command("author", self.name).dumps() + self.affiliation.dumps()
+
+
+@dataclasses.dataclass
+class Acronym(pylatex.base_classes.LatexObject):
+    acronym: str
+    name_full: str
+    name_short: None | str = None
+    plural: bool = False
+    short: bool = False
+
+    def __post_init__(self):
+        self.packages.append(pylatex.Package("acronym"))
+
+    def dumps(self):
+        name_short = self.name_short
+        if name_short is None:
+            name_short = self.acronym
+
+        command = pylatex.Command(
+            command="newacro",
+            arguments=[
+                self.acronym,
+            ],
+            options=[name_short],
+            extra_arguments=[
+                pylatex.NoEscape(self.name_full),
+            ],
+        ).dumps()
+        command += pylatex.Command(
+            command="newcommand",
+            arguments=[
+                pylatex.NoEscape(rf"\{self.acronym}"),
+                pylatex.NoEscape(rf"\ac{self.acronym}"),
+            ],
+        ).dumps()
+        if self.plural:
+            command += pylatex.Command(
+                command="newcommand",
+                arguments=[
+                    pylatex.NoEscape(rf"\{self.acronym}s"),
+                    pylatex.NoEscape(rf"\acp{{{self.acronym}}}"),
+                ],
+            ).dumps()
+        if self.short:
+            command += pylatex.Command(
+                command="newcommand",
+                arguments=[
+                    pylatex.NoEscape(rf"\{self.acronym}Short"),
+                    pylatex.NoEscape(rf"\acs{{{self.acronym}}}"),
+                ],
+            ).dumps()
+        return command
