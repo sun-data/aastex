@@ -47,7 +47,7 @@ Example
     filename = f"{str(path_pdf.resolve())}.pdf"
     url = f"https://aastex.readthedocs.io/en/latest/an_interesting_article.pdf"
     print(url)
-    IPython.display.Image(url=url)
+    IPython.display.IFrame(url=url)
     #wand.image.Image(filename=filename, resolution=100)
 
 |
