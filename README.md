@@ -8,3 +8,11 @@
 
 This Python library extends [PyLaTeX](https://github.com/JelteF/PyLaTeX) to support the
 AASTeX LaTeX package.
+
+## Installation
+
+`aastex` is available on PyPI and can be installed using `pip`:
+
+```bash
+pip install aastex
+```
