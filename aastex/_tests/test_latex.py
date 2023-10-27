@@ -28,3 +28,23 @@ class TestAffiliation:
 
     def test_dumps(self, a: aastex.Affiliation):
         assert isinstance(a.dumps(), str)
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Author(
+            name="Jane Doe",
+            affiliation=aastex.Affiliation("Fancy University")
+        ),
+    ],
+)
+class TestAuthor:
+    def test_name(self, a: aastex.Author):
+        assert isinstance(a.name, str)
+
+    def test_affiliation(self, a: aastex.Author):
+        assert isinstance(a.affiliation, aastex.Affiliation)
+
+    def test_dumps(self, a: aastex.Author):
+        assert isinstance(a.dumps(), str)
