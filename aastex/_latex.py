@@ -8,6 +8,7 @@ __all__ = [
     "Label",
     "Acronym",
     "Abstract",
+    "Document",
 ]
 
 
@@ -104,4 +105,8 @@ class Acronym(pylatex.base_classes.LatexObject):
 
 
 class Abstract(pylatex.base_classes.Environment):
+    pass
+
+
+class Document(pylatex.Document):
     pass

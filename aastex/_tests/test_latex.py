@@ -111,3 +111,13 @@ class TestAcronym:
 )
 class TestAbstract:
     pass
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Document(),
+    ],
+)
+class TestDocument:
+    pass
