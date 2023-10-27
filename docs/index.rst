@@ -15,7 +15,7 @@ Example
     import wand.image
     import IPython
 
-    path_pdf = pathlib.Path("_build/html/_static/an_interesting_article")
+    path_pdf = pathlib.Path("../_readthedocs/html/an_interesting_article")
 
     title = aastex.Title("An Interesting Article")
 
@@ -45,7 +45,7 @@ Example
     doc.generate_pdf(filepath=str(path_pdf.resolve()))
 
     filename = f"{str(path_pdf.resolve())}.pdf"
-    url = f"https://aastex.readthedocs.io/en/latest/_static/an_interesting_article.pdf"
+    url = f"https://aastex.readthedocs.io/en/latest/an_interesting_article.pdf"
     print(url)
     IPython.display.Image(url=url)
     #wand.image.Image(filename=filename, resolution=100)
