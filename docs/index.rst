@@ -12,10 +12,7 @@ Example
     import pathlib
     import pylatex
     import aastex
-    import wand.image
     import IPython
-
-    path_pdf = pathlib.Path("../_readthedocs/html/an_interesting_article")
 
     title = aastex.Title("An Interesting Article")
 
@@ -26,7 +23,6 @@ Example
 
     intro = pylatex.Section("Introduction")
     intro.escape = False
-    intro.append("Some text introducing the contents of the article")
     intro.append(r"\lipsum[2-4]")
 
     doc = aastex.Document(
@@ -41,14 +37,21 @@ Example
     doc.append(abstract)
     doc.append(intro)
 
-    path_pdf.parent.mkdir(parents=True, exist_ok=True)
-    doc.generate_pdf(filepath=str(path_pdf.resolve()))
+    path_pdf = pathlib.Path("an_interesting_article".pdf)
+    doc.generate_pdf(filepath=path_pdf.with_suffix(""))
 
-    filename = f"{str(path_pdf.resolve())}.pdf"
-    url = f"https://aastex.readthedocs.io/en/latest/an_interesting_article.pdf"
+.. jupyter-execute::
+    :hide-code:
+
+    import os
+
+    path_build = pathlib.Path(os.environ["READTHEDOCS_OUTPUT"]) / "html"
+    path_pdf_new = path_pdf.rename(path_build / path_pdf.name)
+    print(path_pdf_new)
+
+    url = f"https://aastex.readthedocs.io/en/latest/{path_pdf.name}"
     print(url)
-    IPython.display.IFrame(url=url)
-    #wand.image.Image(filename=filename, resolution=100)
+    IPython.display.IFrame(url, width=900, height=800)
 
 |
 
