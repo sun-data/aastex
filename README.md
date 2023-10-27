@@ -6,4 +6,5 @@
 [![Documentation Status](https://readthedocs.org/projects/aastex/badge/?version=latest)](https://aastex.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/aastex.svg)](https://badge.fury.io/py/aastex)
 
-A Python wrapper around the AASTeX Latex package
+This Python library extends [PyLaTeX](https://github.com/JelteF/PyLaTeX) to support the
+AASTeX LaTeX package.
