@@ -24,7 +24,7 @@ class Affiliation(pylatex.base_classes.LatexObject):
     """human-readable name of the organization"""
 
     def dumps(self):
-        return pylatex.Command('affiliation', self.name).dumps()
+        return pylatex.Command("affiliation", self.name).dumps()
 
 
 @dataclasses.dataclass
