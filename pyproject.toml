@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aastex"
+authors = [
+    {name = "Roy T. Smart", email = "roytsmart@gmail.com"},
+]
+description = "A Python wrapper around the AASTeX Latex packages"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "pylatex"
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+doc = [
+    "pytest",
+    "graphviz",
+    "sphinx-autodoc-typehints",
+    "pydata-sphinx-theme",
+    "ipykernel",
+    "jupyter-sphinx",
+    "sphinx-favicon",
+]
+
+[project.urls]
+Homepage = "https://github.com/sun-data/aastex"
+Documentation = "https://aastex.readthedocs.io/en/latest"
+
+[tool.setuptools_scm]
+
+[tool.setuptools.package-data]
+named_arrays = ["py.typed"]
