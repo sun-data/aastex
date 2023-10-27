@@ -56,9 +56,13 @@ class TestAuthor:
         aastex.Acronym(
             acronym="NASA",
             name_full="National Aeronautical and Space Administration",
-            plural=True,
-            short=True,
+            name_short=name_short,
+            plural=plural,
+            short=short,
         )
+        for short in [False, True]
+        for plural in [False, True]
+        for name_short in [None, "Naysah"]
     ],
 )
 class TestAcronym:
