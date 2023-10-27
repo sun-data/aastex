@@ -26,7 +26,6 @@ Example
     intro.append(r"\lipsum[2-4]")
 
     doc = aastex.Document(
-        default_filepath=str(path_pdf),
         documentclass="aastex631",
         document_options=["twocolumn"],
     )
