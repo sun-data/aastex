@@ -11,7 +11,7 @@ build:
     - ghostscript
   jobs:
     post_system_dependencies:
-      - sudo sed -i 's/^.*policy.*coder.*none.*PDF.*//' /etc/ImageMagick-6/policy.xml
+      - sed -i 's/^.*policy.*coder.*none.*PDF.*//' /etc/ImageMagick-6/policy.xml
 
 sphinx:
   configuration: docs/conf.py
