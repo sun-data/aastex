@@ -12,7 +12,7 @@ __all__ = [
 class Title(pylatex.base_classes.LatexObject):
     name: str
 
-    def dumps(self):
+    def dumps(self) -> str:
         return pylatex.Command("title", self.name).dumps()
 
 
@@ -23,7 +23,7 @@ class Affiliation(pylatex.base_classes.LatexObject):
     name: str
     """human-readable name of the organization"""
 
-    def dumps(self):
+    def dumps(self)-> str:
         return pylatex.Command("affiliation", self.name).dumps()
 
 
@@ -36,5 +36,5 @@ class Author(pylatex.base_classes.LatexObject):
     affiliation: Affiliation
     """organization affiliated with the author"""
 
-    def dumps(self):
+    def dumps(self) -> str:
         return pylatex.Command("author", self.name).dumps() + self.affiliation.dumps()
