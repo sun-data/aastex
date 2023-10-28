@@ -4,6 +4,7 @@ Introduction
 This Python library extends `PyLaTeX <https://github.com/JelteF/PyLaTeX>`_ to support the
 AASTeX LaTeX package.
 
+|
 
 API Reference
 =============
@@ -62,8 +63,6 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
 
-|
-
 Which generates the following PDF:
 
 .. jupyter-execute::
@@ -77,6 +76,7 @@ Which generates the following PDF:
     url = f"https://aastex.readthedocs.io/en/latest/{path_pdf.name}"
     IPython.display.IFrame(url, width=900, height=400)
 
+|
 
 Indices and tables
 ==================
