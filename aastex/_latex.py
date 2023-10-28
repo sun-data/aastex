@@ -105,7 +105,6 @@ class Acronym(pylatex.base_classes.LatexObject):
 
 
 class Abstract(pylatex.base_classes.Environment):
-
     def __init__(
         self,
         *,
