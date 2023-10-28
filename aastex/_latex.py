@@ -105,7 +105,22 @@ class Acronym(pylatex.base_classes.LatexObject):
 
 
 class Abstract(pylatex.base_classes.Environment):
-    pass
+
+    def __init__(
+        self,
+        *,
+        options: None | str | list[str] = None,
+        arguments: None | str | list[str] = None,
+        start_arguments: None | str | list[str] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            options=options,
+            arguments=arguments,
+            start_arguments=start_arguments,
+            **kwargs,
+        )
+        self.escape = False
 
 
 class Document(pylatex.Document):

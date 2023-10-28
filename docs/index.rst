@@ -40,7 +40,6 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     author = aastex.Author('Roy T. Smart', msu)
 
     abstract = aastex.Abstract()
-    abstract.escape = False
     abstract.append("Some text summarizing the article. ")
     abstract.append(r"\lipsum[1-1]")
 
