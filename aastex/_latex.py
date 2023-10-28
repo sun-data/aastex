@@ -1,6 +1,7 @@
 import dataclasses
 import pathlib
 import pylatex
+from pylatex import Package
 
 __all__ = [
     "Title",
@@ -11,6 +12,7 @@ __all__ = [
     "Abstract",
     "Section",
     "Document",
+    "Package",
 ]
 
 

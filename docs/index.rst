@@ -26,7 +26,6 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
 .. jupyter-execute::
 
     import pathlib
-    import pylatex
     import aastex
     import IPython
 
@@ -40,16 +39,15 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     author = aastex.Author('Roy T. Smart', msu)
 
     abstract = aastex.Abstract()
+    abstract.packages.append(aastex.Package("lipsum"))
     abstract.append("Some text summarizing the article. ")
     abstract.append(r"\lipsum[1-1]")
 
     intro = aastex.Section("Introduction")
+    intro.packages.append(aastex.Package("lipsum"))
     intro.append(r"\lipsum[2-4]")
 
     doc = aastex.Document()
-
-    doc.packages.append(pylatex.Package("lipsum"))
-
     doc.append(title)
     doc.append(author)
     doc.append(abstract)
