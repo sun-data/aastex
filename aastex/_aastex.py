@@ -1,9 +1,15 @@
 import dataclasses
 import pathlib
 import pylatex
-from pylatex import Package
+from pylatex import (
+    NoEscape,
+    Package,
+    Figure,
+)
 
 __all__ = [
+    "text_width_inches",
+    "column_width_inches",
     "Title",
     "Affiliation",
     "Author",
@@ -12,8 +18,13 @@ __all__ = [
     "Abstract",
     "Section",
     "Document",
+    "NoEscape",
     "Package",
+    "Figure",
 ]
+
+text_width_inches = 513.11743 / 72
+column_width_inches = 242.26653 / 72
 
 
 @dataclasses.dataclass

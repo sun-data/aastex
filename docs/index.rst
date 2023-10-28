@@ -29,6 +29,8 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
 .. jupyter-execute::
 
     import pathlib
+    import numpy as np
+    import matplotlib.pyplot as plt
     import aastex
 
     title = aastex.Title("An Interesting Article")
@@ -49,11 +51,25 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     intro.packages.append(aastex.Package("lipsum"))
     intro.append(r"\lipsum[2-4]")
 
+    fig, ax = plt.subplots(figsize=(aastex.column_width_inches, 2))
+    data = np.random.normal(size=(11, 11))
+    ax.plot(data)
+    path_data = pathlib.Path("data.pdf")
+    fig.savefig(path_data)
+    plt.close(fig)
+
+    figure = aastex.Figure()
+    figure.add_image(str(path_data), width=None)
+    figure.add_caption(aastex.NoEscape(
+        r"Here is a figure caption. \lipsum[5-5]"
+    ))
+
     doc = aastex.Document()
     doc.append(title)
     doc.append(author)
     doc.append(abstract)
     doc.append(intro)
+    doc.append(figure)
 
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
