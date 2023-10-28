@@ -1,1 +1,1 @@
-from ._latex import *
+from ._aastex import *
