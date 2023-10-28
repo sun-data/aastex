@@ -116,6 +116,16 @@ class TestAbstract:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.Section("Introduction"),
+    ],
+)
+class TestAbstract:
+    pass
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Document(),
     ],
 )

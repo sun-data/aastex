@@ -8,6 +8,7 @@ __all__ = [
     "Label",
     "Acronym",
     "Abstract",
+    "Section",
     "Document",
 ]
 
@@ -117,6 +118,24 @@ class Abstract(pylatex.base_classes.Environment):
             options=options,
             arguments=arguments,
             start_arguments=start_arguments,
+            **kwargs,
+        )
+        self.escape = False
+
+
+class Section(pylatex.Section):
+    def __init__(
+        self,
+        title: None | str = None,
+        numbering: None | bool = None,
+        *,
+        label: pylatex.Label | bool | str = True,
+        **kwargs,
+    ):
+        super().__init__(
+            title=title,
+            numbering=numbering,
+            label=label,
             **kwargs,
         )
         self.escape = False
