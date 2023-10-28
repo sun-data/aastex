@@ -66,12 +66,15 @@ Which outputs the following PDF:
     import os
     import IPython
 
-    path_build = pathlib.Path(os.environ.get("READTHEDOCS_OUTPUT", "_build")) / "html"
-    path_pdf_new = path_pdf.rename(path_build / path_pdf.name)
+    try:
+        path_build = pathlib.Path(os.environ["READTHEDOCS_OUTPUT"]) / "html"
+        path_pdf_new = path_pdf.rename(path_build / path_pdf.name)
 
-    print(path_pdf_new)
+        url = f"https://aastex.readthedocs.io/en/latest/{path_pdf.name}"
 
-    url = f"https://aastex.readthedocs.io/en/latest/{path_pdf.name}"
+    except KeyError:
+        url = path_pdf.resolve()
+
     IPython.display.IFrame(url, width=900, height=400)
 
 |
