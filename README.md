@@ -7,7 +7,7 @@
 [![PyPI version](https://badge.fury.io/py/aastex.svg)](https://badge.fury.io/py/aastex)
 
 This Python library extends [PyLaTeX](https://github.com/JelteF/PyLaTeX) to support the
-AASTeX LaTeX package.
+[AASTeX LaTeX package](https://journals.aas.org/aastex-package-for-manuscript-preparation/).
 
 ## Installation
 

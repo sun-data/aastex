@@ -1,8 +1,11 @@
 Introduction
 ============
 
-This Python library extends `PyLaTeX <https://github.com/JelteF/PyLaTeX>`_ to support the
-AASTeX LaTeX package.
+This Python library extends `PyLaTeX <https://github.com/JelteF/PyLaTeX>`_
+to support the `AASTeX LaTeX package <https://journals.aas.org/aastex-package-for-manuscript-preparation/>`_.
+
+Please see the `PyLaTeX documentation <https://jeltef.github.io/PyLaTeX/current/>`_
+for more information on how to use this package.
 
 |
 
@@ -56,7 +59,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
 
-Which generates the following PDF:
+Which outputs the following PDF:
 
 .. jupyter-execute::
     :hide-code:
