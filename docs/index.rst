@@ -23,7 +23,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         'P.O. Box 173840, Bozeman, MT 59717, USA'
     )
 
-    author = aastex.Author('Roy T. Smart', msu),
+    author = aastex.Author('Roy T. Smart', msu)
 
     abstract = aastex.Abstract()
     abstract.escape = False
