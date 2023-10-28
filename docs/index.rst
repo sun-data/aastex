@@ -4,6 +4,19 @@ Introduction
 This Python library extends `PyLaTeX <https://github.com/JelteF/PyLaTeX>`_ to support the
 AASTeX LaTeX package.
 
+
+API Reference
+=============
+
+.. autosummary::
+    :toctree: _autosummary
+    :template: module_custom.rst
+    :recursive:
+
+    aastex
+
+|
+
 Example
 =======
 
@@ -63,19 +76,6 @@ Which generates the following PDF:
 
     url = f"https://aastex.readthedocs.io/en/latest/{path_pdf.name}"
     IPython.display.IFrame(url, width=900, height=400)
-
-|
-
-API Reference
-=============
-
-.. autosummary::
-    :toctree: _autosummary
-    :template: module_custom.rst
-    :recursive:
-
-    aastex
-
 
 
 Indices and tables
