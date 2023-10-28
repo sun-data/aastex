@@ -1,4 +1,5 @@
 import dataclasses
+import pathlib
 import pylatex
 
 __all__ = [
@@ -142,4 +143,37 @@ class Section(pylatex.Section):
 
 
 class Document(pylatex.Document):
-    pass
+    def __init__(
+        self,
+        default_filepath: str | pathlib.Path = "default_filepath",
+        documentclass: str = "aastex631",
+        document_options: None | str | list[str] = None,
+        fontenc: str = "T1",
+        inputenc: str = "utf8",
+        font_size: str = "normalsize",
+        lmodern: bool = True,
+        textcomp: bool = True,
+        microtype: None = None,
+        page_numbers: bool = True,
+        indent: None | bool = None,
+        geometry_options: None | dict = None,
+        data: None | list = None,
+    ):
+        if document_options is None:
+            document_options = ["twocolumns"]
+        super().__init__(
+            default_filepath=str(default_filepath),
+            documentclass=documentclass,
+            document_options=document_options,
+            fontenc=fontenc,
+            inputenc=inputenc,
+            font_size=font_size,
+            lmodern=lmodern,
+            textcomp=textcomp,
+            microtype=microtype,
+            page_numbers=page_numbers,
+            indent=indent,
+            geometry_options=geometry_options,
+            data=data,
+        )
+        self.escape = False

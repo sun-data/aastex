@@ -46,10 +46,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     intro = aastex.Section("Introduction")
     intro.append(r"\lipsum[2-4]")
 
-    doc = aastex.Document(
-        documentclass="aastex631",
-        document_options=["twocolumn"],
-    )
+    doc = aastex.Document()
 
     doc.packages.append(pylatex.Package("lipsum"))
 
