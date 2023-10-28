@@ -43,8 +43,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     abstract.append("Some text summarizing the article. ")
     abstract.append(r"\lipsum[1-1]")
 
-    intro = pylatex.Section("Introduction")
-    intro.escape = False
+    intro = aastex.Section("Introduction")
     intro.append(r"\lipsum[2-4]")
 
     doc = aastex.Document(
