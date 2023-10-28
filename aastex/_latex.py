@@ -160,7 +160,7 @@ class Document(pylatex.Document):
         data: None | list = None,
     ):
         if document_options is None:
-            document_options = ["twocolumns"]
+            document_options = ["twocolumn"]
         super().__init__(
             default_filepath=str(default_filepath),
             documentclass=documentclass,
