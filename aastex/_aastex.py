@@ -158,7 +158,6 @@ class Section(pylatex.Section):
 class Figure(
     pylatex.Figure,
 ):
-
     marker_prefix = "fig"
 
     def __init__(
