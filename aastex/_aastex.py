@@ -1,10 +1,11 @@
 import dataclasses
 import pathlib
+import matplotlib.figure
+import uuid
 import pylatex
 from pylatex import (
     NoEscape,
     Package,
-    Figure,
 )
 
 __all__ = [
@@ -153,6 +154,70 @@ class Section(pylatex.Section):
             **kwargs,
         )
         self.escape = False
+
+
+class Figure(
+    pylatex.Figure,
+):
+    def add_image(
+        self,
+        filename: pathlib.Path,
+        *,
+        width: str = NoEscape(r'0.8\textwidth'),
+        placement: str = NoEscape(r'\centering'),
+    ):
+        super().add_image(
+            filename=str(filename.resolve()),
+            width=width,
+            placement=placement,
+        )
+
+    def _save_fig(
+        self,
+        fig: matplotlib.figure.Figure,
+        *args,
+        extension="pdf",
+        **kwargs,
+    ) -> pathlib.Path:
+        tmp_path = pathlib.Path(pylatex.utils.make_temp_dir())
+        filename = f"{str(uuid.uuid4())}.{extension.strip('.')}"
+        filepath = tmp_path / filename
+        fig.savefig(filepath, *args, **kwargs)
+        return filepath
+
+    def add_fig(
+        self,
+        fig: matplotlib.figure.Figure,
+        *args,
+        extension="pdf",
+        **kwargs,
+    ):
+        """
+        Add a :class:`matplotlib.Figure` to the this :class:`Figure`
+
+        Parameters
+        ----------
+        fig
+            matploblib figure to add to tis document
+        args
+            Arguments passed to plt.savefig for displaying the plot.
+        extension
+            extension of image file indicating figure file type
+        kwargs
+            Keyword arguments passed to plt.savefig for displaying the plot. In
+            case these contain ``width`` or ``placement``, they will be used
+            for the same purpose as in the add_image command. Namely the width
+            and placement of the generated plot in the LaTeX document.
+        """
+        add_image_kwargs = {}
+
+        for key in ("width", "placement"):
+            if key in kwargs:
+                add_image_kwargs[key] = kwargs.pop(key)
+
+        filename = self._save_fig(fig, *args, extension=extension, **kwargs)
+
+        self.add_image(filename, **add_image_kwargs)
 
 
 class Document(pylatex.Document):

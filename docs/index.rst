@@ -55,7 +55,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     data = np.random.normal(size=(11, 11))
     ax.plot(data)
     figure = aastex.Figure()
-    figure.add_plot(width=None)
+    figure.add_fig(fig, width=None)
     figure.add_caption(aastex.NoEscape(
         r"Here is a figure caption. \lipsum[5-5]"
     ))

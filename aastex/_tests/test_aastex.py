@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+import matplotlib.pyplot as plt
 import aastex
 
 
@@ -121,6 +123,23 @@ class TestAbstract:
 )
 class TestSection:
     pass
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Figure(),
+    ]
+)
+class TestFigure:
+
+    def test_add_fig(self, a: aastex.Figure):
+
+        fig, ax = plt.subplots()
+        ax.plot(np.random.normal(size=11))
+        a.add_fig(fig)
+
+        assert r"\includegraphics" in  a.dumps()
 
 
 @pytest.mark.parametrize(
