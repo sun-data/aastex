@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
+import astropy.units as u
 import aastex
 
 
@@ -171,4 +172,40 @@ class TestFigureStar:
     ],
 )
 class TestDocument:
-    pass
+    @pytest.mark.parametrize(
+        argnames="value",
+        argvalues=[
+            1e-5 * u.m,
+            [1, 2, 3] * u.s,
+        ],
+    )
+    @pytest.mark.parametrize(
+        argnames="scientific_notation",
+        argvalues=[
+            None,
+            False,
+            True,
+        ],
+    )
+    @pytest.mark.parametrize(
+        argnames="digits_after_decimal",
+        argvalues=[
+            4,
+        ],
+    )
+    def test_set_variable_quantity(
+        self,
+        a: aastex.Document,
+        value: u.Quantity,
+        scientific_notation: None | bool,
+        digits_after_decimal: int,
+    ):
+        name = "testVariable"
+        a.set_variable_quantity(
+            name=name,
+            value=value,
+            scientific_notation=scientific_notation,
+            digits_after_decimal=digits_after_decimal,
+        )
+
+        assert name in a.dumps()

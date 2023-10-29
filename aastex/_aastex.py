@@ -1,6 +1,7 @@
 import dataclasses
 import pathlib
 import matplotlib.figure
+import astropy.units as u
 import uuid
 import pylatex
 from pylatex import (
@@ -10,6 +11,7 @@ from pylatex import (
     Label,
     Ref,
 )
+from . import _formatting
 
 __all__ = [
     "text_width_inches",
@@ -315,3 +317,37 @@ class Document(pylatex.Document):
             data=data,
         )
         self.escape = False
+
+    def set_variable_quantity(
+        self,
+        name: str,
+        value: u.Quantity,
+        scientific_notation: None | bool = None,
+        digits_after_decimal: int = 3,
+    ) -> None:
+        """
+        Similar to :meth:`set_variable`, but allows for ``value`` to be an
+        instance of :class:`astropy.units.Quantity`.
+
+        Parameters
+        ----------
+        name
+            The name to set for the variable
+        value
+            The value to set for the variable
+        scientific_notation
+            Flag controlling whether to use scientific notation.
+            If :obj:`None`, scientific notation is used if ``np.all(values) < .1``
+        digits_after_decimal
+            Number of digits to include after the decimal
+        """
+        self.set_variable(
+            name=name,
+            value=pylatex.NoEscape(
+                _formatting.format_quantity(
+                    a=value,
+                    scientific_notation=scientific_notation,
+                    digits_after_decimal=digits_after_decimal,
+                )
+            ),
+        )
