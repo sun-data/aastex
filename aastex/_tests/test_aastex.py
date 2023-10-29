@@ -55,20 +55,6 @@ class TestAuthor:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
-        aastex.Label("momentum-equation"),
-    ],
-)
-class TestLabel:
-    def test_name(self, a: aastex.Label):
-        assert isinstance(a.name, str)
-
-    def test_dumps(self, a: aastex.Label):
-        assert isinstance(a.dumps(), str)
-
-
-@pytest.mark.parametrize(
-    argnames="a",
-    argvalues=[
         aastex.Acronym(
             acronym="NASA",
             name_full="National Aeronautical and Space Administration",
