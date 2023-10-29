@@ -158,7 +158,7 @@ class TestFigure:
     argnames="a",
     argvalues=[
         aastex.FigureStar("fig:figurestar"),
-    ]
+    ],
 )
 class TestFigureStar:
     pass
