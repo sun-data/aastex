@@ -6,7 +6,9 @@ import pylatex
 from pylatex import (
     NoEscape,
     Package,
+    Marker,
     Label,
+    Ref,
 )
 
 __all__ = [
@@ -21,6 +23,7 @@ __all__ = [
     "Document",
     "NoEscape",
     "Package",
+    "Marker",
     "Label",
     "Figure",
 ]
@@ -155,6 +158,36 @@ class Section(pylatex.Section):
 class Figure(
     pylatex.Figure,
 ):
+
+    marker_prefix = "fig"
+
+    def __init__(
+        self,
+        label: str | Label,
+        position: None | str = None,
+        **kwargs,
+    ):
+        super().__init__(
+            position=position,
+            **kwargs,
+        )
+        if isinstance(label, Label):
+            self._label = label
+        elif isinstance(label, str):
+            if ":" in label:
+                label = label.split(":", 1)
+                self._label = Label(Marker(label[1], label[0]))
+            else:
+                self._label = Label(Marker(label, self.marker_prefix))
+        else:
+            raise TypeError(
+                f"`label` must be `str` or `aastex.Label`, got {type(label)}"
+            )
+        self.append(self._label)
+
+    def __format__(self, format_spec):
+        return Ref(self._label.marker).dumps()
+
     def add_image(
         self,
         filename: pathlib.Path,

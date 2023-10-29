@@ -116,10 +116,14 @@ class TestSection:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
-        aastex.Figure(),
+        aastex.Figure("my-figure"),
     ],
 )
 class TestFigure:
+    def test__format__(self, a: aastex.Section):
+        result = f"{a}"
+        assert r"\ref" in result
+
     def test_add_fig(self, a: aastex.Figure):
         fig, ax = plt.subplots()
         ax.plot(np.random.normal(size=11))

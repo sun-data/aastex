@@ -51,20 +51,21 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     intro.packages.append(aastex.Package("lipsum"))
     intro.append(r"\lipsum[2-4]")
 
-    methods = aastex.Section("Methods")
-    methods.append(
-        rf"Here is a reference to Section {intro}."
-    )
-
     fig, ax = plt.subplots(figsize=(aastex.column_width_inches, 2))
     data = np.random.normal(size=(11, 11))
     ax.plot(data)
-    figure = aastex.Figure()
+    figure = aastex.Figure("data")
     figure.add_fig(fig, width=None)
     figure.add_caption(aastex.NoEscape(
         r"Here is a figure caption. \lipsum[5-5]"
     ))
     plt.close(fig)
+
+    methods = aastex.Section("Methods")
+    methods.append(
+        rf"Here is a reference to Section {intro}. "
+        rf"Here is a reference to Figure {figure}. "
+    )
 
     doc = aastex.Document()
     doc.append(title)
