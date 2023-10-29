@@ -33,29 +33,35 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     import matplotlib.pyplot as plt
     import aastex
 
+    # Modify matplotlib defaults to use Latex backend
+    # with correct font family and size
     plt.rcParams['text.usetex'] = True
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.size'] = 9
     plt.rcParams['lines.linewidth'] = 1
 
+    # Define the title of the article
     title = aastex.Title("An Interesting Article")
 
+    # Define the author of the paper and their affiliated organization
     msu = aastex.Affiliation(
         'Montana State University, Department of Physics, '
         'P.O. Box 173840, Bozeman, MT 59717, USA'
     )
-
     author = aastex.Author('Roy T. Smart', msu)
 
+    # Define the abstract of the article
     abstract = aastex.Abstract()
     abstract.packages.append(aastex.Package("lipsum"))
     abstract.append("Some text summarizing the article. ")
     abstract.append(r"\lipsum[1-1]")
 
+    # Define the introduction of the article
     intro = aastex.Section("Introduction")
     intro.packages.append(aastex.Package("lipsum"))
     intro.append(r"\lipsum[2-4]")
 
+    # Define a column-width figure with random data
     fig, ax = plt.subplots(
         figsize=(aastex.column_width_inches, 2),
         constrained_layout=True,
@@ -69,12 +75,14 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     ))
     plt.close(fig)
 
+    # Define a new section of this article with some references
     methods = aastex.Section("Methods")
     methods.append(
         rf"Here is a reference to Section {intro}. "
         rf"Here is a reference to Figure {figure}. "
     )
 
+    # Define a text-width figure with random data
     fig2, ax2 = plt.subplots(
         figsize=(aastex.text_width_inches, 2),
         constrained_layout=True,
@@ -89,6 +97,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     ))
     plt.close(fig2)
 
+    # Collect all of the above elements into a single document
     doc = aastex.Document()
     doc.append(title)
     doc.append(author)
@@ -98,6 +107,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     doc.append(methods)
     doc.append(figure2)
 
+    # Compile the document into a PDF
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
 
