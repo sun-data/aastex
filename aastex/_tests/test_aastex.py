@@ -129,17 +129,15 @@ class TestSection:
     argnames="a",
     argvalues=[
         aastex.Figure(),
-    ]
+    ],
 )
 class TestFigure:
-
     def test_add_fig(self, a: aastex.Figure):
-
         fig, ax = plt.subplots()
         ax.plot(np.random.normal(size=11))
         a.add_fig(fig)
 
-        assert r"\includegraphics" in  a.dumps()
+        assert r"\includegraphics" in a.dumps()
 
 
 @pytest.mark.parametrize(
