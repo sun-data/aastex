@@ -6,6 +6,7 @@ import pylatex
 from pylatex import (
     NoEscape,
     Package,
+    Label,
 )
 
 __all__ = [
@@ -14,13 +15,13 @@ __all__ = [
     "Title",
     "Affiliation",
     "Author",
-    "Label",
     "Acronym",
     "Abstract",
     "Section",
     "Document",
     "NoEscape",
     "Package",
+    "Label",
     "Figure",
 ]
 
@@ -58,14 +59,6 @@ class Author(pylatex.base_classes.LatexObject):
 
     def dumps(self) -> str:
         return pylatex.Command("author", self.name).dumps() + self.affiliation.dumps()
-
-
-@dataclasses.dataclass
-class Label(pylatex.base_classes.LatexObject):
-    name: str
-
-    def dumps(self):
-        return pylatex.Command("label", pylatex.NoEscape(self.name)).dumps()
 
 
 @dataclasses.dataclass
