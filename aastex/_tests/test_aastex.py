@@ -135,7 +135,7 @@ class TestFigure:
     def test_add_fig(self, a: aastex.Figure):
         fig, ax = plt.subplots()
         ax.plot(np.random.normal(size=11))
-        a.add_fig(fig)
+        a.add_fig(fig, width=None)
 
         assert r"\includegraphics" in a.dumps()
 
