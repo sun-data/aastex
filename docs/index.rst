@@ -54,15 +54,12 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     fig, ax = plt.subplots(figsize=(aastex.column_width_inches, 2))
     data = np.random.normal(size=(11, 11))
     ax.plot(data)
-    path_data = pathlib.Path("data.pdf")
-    fig.savefig(path_data)
-    plt.close(fig)
-
     figure = aastex.Figure()
-    figure.add_image(str(path_data), width=None)
+    figure.add_plot(width=None)
     figure.add_caption(aastex.NoEscape(
         r"Here is a figure caption. \lipsum[5-5]"
     ))
+    plt.close(fig)
 
     doc = aastex.Document()
     doc.append(title)
