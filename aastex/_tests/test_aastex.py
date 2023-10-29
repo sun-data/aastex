@@ -117,7 +117,7 @@ class TestSection:
     argnames="a",
     argvalues=[
         aastex.Subsection("Foo"),
-    ]
+    ],
 )
 class TestSubsection:
     pass
