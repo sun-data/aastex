@@ -22,6 +22,7 @@ __all__ = [
     "Section",
     "Subsection",
     "Subsubsection",
+    "FigureStar",
     "Document",
     "NoEscape",
     "Package",
@@ -259,6 +260,24 @@ class Figure(
         filename = self._save_fig(fig, *args, extension=extension, **kwargs)
 
         self.add_image(filename, **add_image_kwargs)
+
+
+class FigureStar(
+    Figure,
+):
+    def __init__(
+        self,
+        label: str | Label,
+        position: None | str = None,
+        **kwargs,
+    ):
+        super().__init__(
+            label=label,
+            position=position,
+            **kwargs,
+        )
+        self._latex_name = "figure"
+        self._star_latex_name = True
 
 
 class Document(pylatex.Document):

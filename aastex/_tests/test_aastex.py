@@ -157,6 +157,16 @@ class TestFigure:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.FigureStar("fig:figurestar"),
+    ]
+)
+class TestFigureStar:
+    pass
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Document(),
     ],
 )

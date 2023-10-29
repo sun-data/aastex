@@ -51,7 +51,10 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     intro.packages.append(aastex.Package("lipsum"))
     intro.append(r"\lipsum[2-4]")
 
-    fig, ax = plt.subplots(figsize=(aastex.column_width_inches, 2))
+    fig, ax = plt.subplots(
+        figsize=(aastex.column_width_inches, 2),
+        constrained_layout=True,
+    )
     data = np.random.normal(size=(11, 11))
     ax.plot(data)
     figure = aastex.Figure("data")
@@ -67,6 +70,20 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         rf"Here is a reference to Figure {figure}. "
     )
 
+    fig2, ax2 = plt.subplots(
+        figsize=(aastex.text_width_inches, 2),
+        constrained_layout=True,
+    )
+    x = np.linspace(-6, 6, num=101)[..., np.newaxis]
+    y = np.sinc(x) + np.random.normal(scale=0.1, size=(101, 11))
+    ax2.plot(*np.broadcast_arrays(x, y))
+    figure2 = aastex.FigureStar("data2")
+    figure2.add_fig(fig2, width=None)
+    figure2.add_caption(aastex.NoEscape(
+        r"Here is another figure caption. \lipsum[6-6]"
+    ))
+    plt.close(fig2)
+
     doc = aastex.Document()
     doc.append(title)
     doc.append(author)
@@ -74,6 +91,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     doc.append(intro)
     doc.append(figure)
     doc.append(methods)
+    doc.append(figure2)
 
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
