@@ -116,6 +116,16 @@ class TestSection:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.Subsection("Foo"),
+    ]
+)
+class TestSubsection:
+    pass
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Figure(aastex.Label(aastex.Marker("fig", "data"))),
         aastex.Figure("fig:data"),
         aastex.Figure("data"),

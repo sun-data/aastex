@@ -20,6 +20,7 @@ __all__ = [
     "Acronym",
     "Abstract",
     "Section",
+    "Subsection",
     "Document",
     "NoEscape",
     "Package",
@@ -153,6 +154,13 @@ class Section(pylatex.Section):
 
     def __format__(self, format_spec):
         return pylatex.Ref(self.label.marker).dumps()
+
+
+class Subsection(
+    Section,
+    pylatex.Subsection,
+):
+    pass
 
 
 class Figure(
