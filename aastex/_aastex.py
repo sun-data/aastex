@@ -21,6 +21,7 @@ __all__ = [
     "Abstract",
     "Section",
     "Subsection",
+    "Subsubsection",
     "Document",
     "NoEscape",
     "Package",
@@ -159,6 +160,13 @@ class Section(pylatex.Section):
 class Subsection(
     Section,
     pylatex.Subsection,
+):
+    pass
+
+
+class Subsubsection(
+    Subsection,
+    pylatex.Subsubsection,
 ):
     pass
 
