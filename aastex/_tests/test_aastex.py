@@ -122,7 +122,9 @@ class TestAbstract:
     ],
 )
 class TestSection:
-    pass
+    def test__format__(self, a: aastex.Section):
+        result = f"{a}"
+        assert r"\ref" in result
 
 
 @pytest.mark.parametrize(

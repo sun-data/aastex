@@ -155,6 +155,9 @@ class Section(pylatex.Section):
         )
         self.escape = False
 
+    def __format__(self, format_spec):
+        return pylatex.Ref(self.label.marker).dumps()
+
 
 class Figure(
     pylatex.Figure,

@@ -51,6 +51,11 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     intro.packages.append(aastex.Package("lipsum"))
     intro.append(r"\lipsum[2-4]")
 
+    methods = aastex.Section("Methods")
+    methods.append(
+        rf"Here is a reference to Section {intro}."
+    )
+
     fig, ax = plt.subplots(figsize=(aastex.column_width_inches, 2))
     data = np.random.normal(size=(11, 11))
     ax.plot(data)
@@ -67,6 +72,7 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     doc.append(abstract)
     doc.append(intro)
     doc.append(figure)
+    doc.append(methods)
 
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
