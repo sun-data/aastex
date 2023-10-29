@@ -33,6 +33,11 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     import matplotlib.pyplot as plt
     import aastex
 
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.size'] = 9
+    plt.rcParams['lines.linewidth'] = 1
+
     title = aastex.Title("An Interesting Article")
 
     msu = aastex.Affiliation(
