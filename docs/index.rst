@@ -31,6 +31,8 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     import pathlib
     import numpy as np
     import matplotlib.pyplot as plt
+    import astropy.units as u
+    import astropy.constants
     import aastex
 
     # Modify matplotlib defaults to use Latex backend
@@ -40,8 +42,12 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     plt.rcParams['font.size'] = 9
     plt.rcParams['lines.linewidth'] = 1
 
+    # Define an object representing the Latex document
+    doc = aastex.Document()
+
     # Define the title of the article
     title = aastex.Title("An Interesting Article")
+    doc.append(title)
 
     # Define the author of the paper and their affiliated organization
     msu = aastex.Affiliation(
@@ -49,17 +55,20 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         'P.O. Box 173840, Bozeman, MT 59717, USA'
     )
     author = aastex.Author('Roy T. Smart', msu)
+    doc.append(author)
 
     # Define the abstract of the article
     abstract = aastex.Abstract()
     abstract.packages.append(aastex.Package("lipsum"))
     abstract.append("Some text summarizing the article. ")
     abstract.append(r"\lipsum[1-1]")
+    doc.append(abstract)
 
     # Define the introduction of the article
     intro = aastex.Section("Introduction")
     intro.packages.append(aastex.Package("lipsum"))
     intro.append(r"\lipsum[2-4]")
+    doc.append(intro)
 
     # Define a column-width figure with random data
     fig, ax = plt.subplots(
@@ -70,17 +79,28 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     ax.plot(data)
     figure = aastex.Figure("data")
     figure.add_fig(fig, width=None)
+    plt.close(fig)
     figure.add_caption(aastex.NoEscape(
         r"Here is a figure caption. \lipsum[5-5]"
     ))
-    plt.close(fig)
+    doc.append(figure)
+
+    # Define the speed of light as a variable that can be used in the document
+    doc.set_variable_quantity(
+        name="speedOfLight",
+        value=astropy.constants.c.to(u.km / u.s),
+        scientific_notation=True,
+        digits_after_decimal=4,
+    )
 
     # Define a new section of this article with some references
     methods = aastex.Section("Methods")
     methods.append(
+        rf"The speed of light is \speedOfLight. "
         rf"Here is a reference to Section {intro}. "
         rf"Here is a reference to Figure {figure}. "
     )
+    doc.append(methods)
 
     # Define a text-width figure with random data
     fig2, ax2 = plt.subplots(
@@ -92,19 +112,10 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     ax2.plot(*np.broadcast_arrays(x, y))
     figure2 = aastex.FigureStar("data2")
     figure2.add_fig(fig2, width=None)
+    plt.close(fig2)
     figure2.add_caption(aastex.NoEscape(
         r"Here is another figure caption. \lipsum[6-6]"
     ))
-    plt.close(fig2)
-
-    # Collect all of the above elements into a single document
-    doc = aastex.Document()
-    doc.append(title)
-    doc.append(author)
-    doc.append(abstract)
-    doc.append(intro)
-    doc.append(figure)
-    doc.append(methods)
     doc.append(figure2)
 
     # Compile the document into a PDF
