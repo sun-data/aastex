@@ -119,7 +119,7 @@ class TestAbstract:
         aastex.Section("Introduction"),
     ],
 )
-class TestAbstract:
+class TestSection:
     pass
 
 
