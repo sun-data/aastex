@@ -116,7 +116,9 @@ class TestSection:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
-        aastex.Figure("my-figure"),
+        aastex.Figure(aastex.Label(aastex.Marker("fig", "data"))),
+        aastex.Figure("fig:data"),
+        aastex.Figure("data"),
     ],
 )
 class TestFigure:

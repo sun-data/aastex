@@ -172,16 +172,13 @@ class Figure(
         )
         if isinstance(label, Label):
             self._label = label
-        elif isinstance(label, str):
+        else:
             if ":" in label:
                 label = label.split(":", 1)
                 self._label = Label(Marker(label[1], label[0]))
             else:
                 self._label = Label(Marker(label, self.marker_prefix))
-        else:
-            raise TypeError(
-                f"`label` must be `str` or `aastex.Label`, got {type(label)}"
-            )
+
         self.append(self._label)
 
     def __format__(self, format_spec):
