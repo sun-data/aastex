@@ -175,6 +175,7 @@ class TestDocument:
     @pytest.mark.parametrize(
         argnames="value",
         argvalues=[
+            0 * u.K,
             1e-5 * u.m,
             [1, 2, 3] * u.s,
         ],

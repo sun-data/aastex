@@ -15,7 +15,7 @@ def format_quantity(
     fstr = "${0.value:0." + str(digits_after_decimal) + "f}\,${0.unit:latex_inline}"
 
     if scientific_notation is None:
-        if np.abs(a.value).any() > 0.1:
+        if np.any(np.abs(a.value) > 0.1):
             scientific_notation = False
         else:
             scientific_notation = True
