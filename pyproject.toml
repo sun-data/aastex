@@ -14,18 +14,19 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "pylatex"
+    "pylatex",
+    "matplotlib",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
 test = [
     "pytest",
+    "numpy",
 ]
 doc = [
     "pytest",
     "numpy",
-    "matplotlib",
     "graphviz",
     "sphinx-autodoc-typehints",
     "pydata-sphinx-theme",
