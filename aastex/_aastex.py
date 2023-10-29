@@ -337,7 +337,7 @@ class Document(pylatex.Document):
             The value to set for the variable
         scientific_notation
             Flag controlling whether to use scientific notation.
-            If :obj:`None`, scientific notation is used if ``np.all(values) < .1``
+            If :obj:`None`, scientific notation is used if ``np.all(values.abs() < .1)``
         digits_after_decimal
             Number of digits to include after the decimal
         """
