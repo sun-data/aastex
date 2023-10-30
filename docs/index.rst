@@ -57,6 +57,10 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     author = aastex.Author('Roy T. Smart', msu)
     doc.append(author)
 
+    # Define an acronym to be used in the body of the document
+    nasa = aastex.Acronym("NASA", "National Aeronautics and Space Administration")
+    doc.preamble.append(nasa)
+
     # Define the abstract of the article
     abstract = aastex.Abstract()
     abstract.packages.append(aastex.Package("lipsum"))
@@ -95,6 +99,8 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         rf"The speed of light is \speedOfLight. "
         rf"Here is a reference to Section {intro}. "
         rf"Here is a reference to Figure {figure}. "
+        rf"Here is an acronym: \NASA. "
+        rf"Here is the acronym again: \NASA. "
         rf"\lipsum[2-2]"
     )
     intro.append(figure)
