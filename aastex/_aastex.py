@@ -318,12 +318,14 @@ class Document(pylatex.Document):
             data=data,
         )
         self.escape = False
-        self.preamble.append(NoEscape(
-            "\\usepackage{savesym}\n"
-            "\\savesymbol{tablenum}\n"
-            "\\usepackage{siunitx}\n"
-            "\\restoresymbol{SIX}{tablenum}\n"
-        ))
+        self.preamble.append(
+            NoEscape(
+                "\\usepackage{savesym}\n"
+                "\\savesymbol{tablenum}\n"
+                "\\usepackage{siunitx}\n"
+                "\\restoresymbol{SIX}{tablenum}\n"
+            )
+        )
         self.preamble.append(pylatex.Command("bibliographystyle", "aasjournal"))
 
     def set_variable_quantity(
