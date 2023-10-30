@@ -318,7 +318,7 @@ class Document(pylatex.Document):
             data=data,
         )
         self.escape = False
-        self.preamble.append(pylatex.Command('bibliographystyle', 'aasjournal'))
+        self.preamble.append(pylatex.Command("bibliographystyle", "aasjournal"))
 
     def set_variable_quantity(
         self,

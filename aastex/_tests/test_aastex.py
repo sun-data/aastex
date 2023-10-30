@@ -216,7 +216,7 @@ class TestDocument:
     argnames="a",
     argvalues=[
         aastex.Bibliography("sources"),
-    ]
+    ],
 )
 class TestBibliography:
     pass
