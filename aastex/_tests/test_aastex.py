@@ -210,3 +210,13 @@ class TestDocument:
         )
 
         assert name in a.dumps()
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Bibliography("sources"),
+    ]
+)
+class TestBibliography:
+    pass

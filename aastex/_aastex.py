@@ -31,6 +31,7 @@ __all__ = [
     "Marker",
     "Label",
     "Figure",
+    "Bibliography",
 ]
 
 text_width_inches = 513.11743 / 72
@@ -317,6 +318,7 @@ class Document(pylatex.Document):
             data=data,
         )
         self.escape = False
+        self.preamble.append(pylatex.Command('bibliographystyle', 'aasjournal'))
 
     def set_variable_quantity(
         self,
@@ -350,4 +352,14 @@ class Document(pylatex.Document):
                     digits_after_decimal=digits_after_decimal,
                 )
             ),
+        )
+
+
+class Bibliography(pylatex.base_classes.CommandBase):
+    def __init__(
+        self,
+        sources: str,
+    ):
+        super().__init__(
+            arguments=sources,
         )

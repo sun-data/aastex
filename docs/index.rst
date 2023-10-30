@@ -64,27 +64,6 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     abstract.append(r"\lipsum[1-1]")
     doc.append(abstract)
 
-    # Define the introduction of the article
-    intro = aastex.Section("Introduction")
-    intro.packages.append(aastex.Package("lipsum"))
-    intro.append(r"\lipsum[2-4]")
-    doc.append(intro)
-
-    # Define a column-width figure with random data
-    fig, ax = plt.subplots(
-        figsize=(aastex.column_width_inches, 2),
-        constrained_layout=True,
-    )
-    data = np.random.normal(size=(11, 11))
-    ax.plot(data)
-    figure = aastex.Figure("data")
-    figure.add_fig(fig, width=None)
-    plt.close(fig)
-    figure.add_caption(aastex.NoEscape(
-        r"Here is a figure caption. \lipsum[5-5]"
-    ))
-    doc.append(figure)
-
     # Define the speed of light as a variable that can be used in the document
     doc.set_variable_quantity(
         name="speedOfLight",
@@ -93,30 +72,37 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         digits_after_decimal=4,
     )
 
-    # Define a new section of this article with some references
-    methods = aastex.Section("Methods")
-    methods.append(
-        rf"The speed of light is \speedOfLight. "
-        rf"Here is a reference to Section {intro}. "
-        rf"Here is a reference to Figure {figure}. "
-    )
-    doc.append(methods)
-
-    # Define a text-width figure with random data
-    fig2, ax2 = plt.subplots(
-        figsize=(aastex.text_width_inches, 2),
+    # Define a column-width figure with random data
+    fig, ax = plt.subplots(
+        figsize=(aastex.column_width_inches, 2),
         constrained_layout=True,
     )
     x = np.linspace(-6, 6, num=101)[..., np.newaxis]
     y = np.sinc(x) + np.random.normal(scale=0.1, size=(101, 11))
-    ax2.plot(*np.broadcast_arrays(x, y))
-    figure2 = aastex.FigureStar("data2")
-    figure2.add_fig(fig2, width=None)
-    plt.close(fig2)
-    figure2.add_caption(aastex.NoEscape(
-        r"Here is another figure caption. \lipsum[6-6]"
+    ax.plot(*np.broadcast_arrays(x, y))
+    figure = aastex.Figure("data")
+    figure.add_fig(fig, width=None)
+    plt.close(fig)
+    figure.add_caption(aastex.NoEscape(
+        r"Here is a figure caption. \lipsum[5-5]"
     ))
-    doc.append(figure2)
+
+    # Define the introduction of the article
+    intro = aastex.Section("Introduction")
+    intro.packages.append(aastex.Package("lipsum"))
+    intro.append(
+        rf"Here is a citation \citep{{knuth:1984}}. "
+        rf"The speed of light is \speedOfLight. "
+        rf"Here is a reference to Section {intro}. "
+        rf"Here is a reference to Figure {figure}. "
+        rf"\lipsum[2-2]"
+    )
+    doc.append(intro)
+    intro.append(figure)
+    intro.append(r"\lipsum[3-5]")
+
+    # Add the bibliography from sources.bib
+    doc.append(aastex.Bibliography("sources"))
 
     # Compile the document into a PDF
     path_pdf = pathlib.Path("an_interesting_article.pdf")
