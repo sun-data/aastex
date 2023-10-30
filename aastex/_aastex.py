@@ -100,7 +100,7 @@ class Acronym(pylatex.base_classes.LatexObject):
             command="newcommand",
             arguments=[
                 pylatex.NoEscape(rf"\{self.acronym}"),
-                pylatex.NoEscape(rf"\ac{self.acronym}"),
+                pylatex.NoEscape(rf"\ac{{{self.acronym}}}"),
             ],
         ).dumps()
         if self.plural:
