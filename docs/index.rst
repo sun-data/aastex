@@ -97,9 +97,9 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         rf"Here is a reference to Figure {figure}. "
         rf"\lipsum[2-2]"
     )
-    doc.append(intro)
     intro.append(figure)
     intro.append(r"\lipsum[3-5]")
+    doc.append(intro)
 
     # Add the bibliography from sources.bib
     doc.append(aastex.Bibliography("sources"))
