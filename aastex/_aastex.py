@@ -25,6 +25,7 @@ __all__ = [
     "Subsection",
     "Subsubsection",
     "FigureStar",
+    "Fig",
     "Document",
     "NoEscape",
     "Package",
@@ -281,6 +282,26 @@ class FigureStar(
         )
         self._latex_name = "figure"
         self._star_latex_name = True
+
+
+class Fig(pylatex.base_classes.CommandBase):
+    """
+    An `AASTeX 6+ \fig command <https://journals.aas.org/aastex-v6-3-author-guide/#new_figure_features>`_
+    """
+
+    def __init__(
+        self,
+        file: pathlib.Path,
+        width: str,
+        caption: str,
+    ):
+        super().__init__(
+            arguments=[
+                NoEscape(str(file.resolve())),
+                width,
+                caption,
+            ]
+        )
 
 
 class Document(pylatex.Document):

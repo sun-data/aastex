@@ -1,3 +1,5 @@
+import pathlib
+
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
@@ -162,6 +164,20 @@ class TestFigure:
     ],
 )
 class TestFigureStar:
+    pass
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Fig(
+            file=pathlib.Path("foo.pdf"),
+            width=r"\textwidth",
+            caption="test caption"
+        ),
+    ],
+)
+class TestFig:
     pass
 
 
