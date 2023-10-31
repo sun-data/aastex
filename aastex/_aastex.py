@@ -26,6 +26,8 @@ __all__ = [
     "Subsubsection",
     "FigureStar",
     "Fig",
+    "LeftFig",
+    "RightFig",
     "Document",
     "NoEscape",
     "Package",
@@ -302,6 +304,14 @@ class Fig(pylatex.base_classes.CommandBase):
                 caption,
             ]
         )
+
+
+class LeftFig(Fig):
+    pass
+
+
+class RightFig(Fig):
+    pass
 
 
 class Document(pylatex.Document):
