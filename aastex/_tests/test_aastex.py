@@ -173,7 +173,7 @@ class TestFigureStar:
         aastex.Fig(
             file=pathlib.Path("foo.pdf"),
             width=r"\textwidth",
-            caption="test caption"
+            caption="test caption",
         ),
     ],
 )
