@@ -198,7 +198,7 @@ class TestLeftFig:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
-        aastex.RigthFig(
+        aastex.RightFig(
             file=pathlib.Path("foo.pdf"),
             width=r"\textwidth",
             caption="test caption",
