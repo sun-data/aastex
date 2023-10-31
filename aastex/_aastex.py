@@ -287,8 +287,8 @@ class FigureStar(
 
 
 class Fig(pylatex.base_classes.CommandBase):
-    """
-    An `AASTeX 6+ \fig command <https://journals.aas.org/aastex-v6-3-author-guide/#new_figure_features>`_
+    r"""
+    An AASTeX 6+ `\fig command <https://journals.aas.org/aastex-v6-3-author-guide/#new_figure_features>`_
     """
 
     def __init__(
