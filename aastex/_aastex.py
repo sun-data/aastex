@@ -16,6 +16,8 @@ from . import _formatting
 __all__ = [
     "text_width_inches",
     "column_width_inches",
+    "textwidth",
+    "columnwidth",
     "Title",
     "Affiliation",
     "Author",
@@ -40,6 +42,10 @@ __all__ = [
 
 text_width_inches = 513.11743 / 72
 column_width_inches = 242.26653 / 72
+
+
+textwidth = pylatex.Command("textwidth")
+columnwidth = pylatex.Command("columnwidth")
 
 
 @dataclasses.dataclass
