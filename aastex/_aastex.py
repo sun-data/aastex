@@ -208,7 +208,7 @@ class Figure(
         self,
         filename: pathlib.Path,
         *,
-        width: str = NoEscape(r"0.8\textwidth"),
+        width: None | str = NoEscape(r"0.8\textwidth"),
         placement: str = NoEscape(r"\centering"),
     ):
         super().add_image(
