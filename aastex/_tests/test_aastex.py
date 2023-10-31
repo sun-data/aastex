@@ -212,6 +212,29 @@ class TestRightFig:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.Gridline(
+            figures=[
+                aastex.LeftFig(
+                    file=pathlib.Path("foo.pdf"),
+                    width=r"0.5\textwidth",
+                    caption="test caption",
+                ),
+                aastex.LeftFig(
+                    file=pathlib.Path("bar.pdf"),
+                    width=r"0.5\textwidth",
+                    caption="test caption",
+                ),
+            ],
+        ),
+    ],
+)
+class TestGridline:
+    pass
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Document(),
     ],
 )

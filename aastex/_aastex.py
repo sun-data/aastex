@@ -28,6 +28,7 @@ __all__ = [
     "Fig",
     "LeftFig",
     "RightFig",
+    "Gridline",
     "Document",
     "NoEscape",
     "Package",
@@ -312,6 +313,20 @@ class LeftFig(Fig):
 
 class RightFig(Fig):
     pass
+
+
+class Gridline(pylatex.base_classes.CommandBase):
+    r"""
+    An AASTeX 6+ `\gridline command <https://journals.aas.org/aastex-v6-3-author-guide/#new_figure_features>`_
+    """
+
+    def __init__(
+        self,
+        figures: list[Fig],
+    ):
+        super().__init__(
+            arguments=figures,
+        )
 
 
 class Document(pylatex.Document):
