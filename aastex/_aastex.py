@@ -5,6 +5,7 @@ import astropy.units as u
 import uuid
 import pylatex
 from pylatex import (
+    Command,
     NoEscape,
     Package,
     Marker,
@@ -14,6 +15,7 @@ from pylatex import (
 from . import _formatting
 
 __all__ = [
+    "Command",
     "text_width_inches",
     "column_width_inches",
     "textwidth",
