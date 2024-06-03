@@ -23,7 +23,6 @@ __all__ = [
     "Title",
     "Affiliation",
     "Author",
-    "CorrespondingAuthor",
     "Acronym",
     "Abstract",
     "Section",
@@ -76,33 +75,37 @@ class Author(pylatex.base_classes.LatexObject):
 
     name: str
     """Name of the author"""
+
     affiliation: Affiliation
-    """organization affiliated with the author"""
+    """The organization affiliated with the author"""
+
+    email: None | str = None
+    """
+    The optional email address of the author.
+    
+    If this is not :obj:`None`, this author is assumed to be the corresponding
+    author.
+    """
 
     def dumps(self) -> str:
-        return pylatex.Command("author", self.name).dumps() + self.affiliation.dumps()
+        author = pylatex.Command("author", self.name).dumps()
+        affilation = self.affiliation.dumps()
+        result = f"{author}\n{affilation}"
 
+        if self.email is not None:
+            corresponding_author = pylatex.Command(
+                command="correspondingauthor",
+                arguments=self.name,
+            ).dumps()
 
-@dataclasses.dataclass
-class CorrespondingAuthor(pylatex.base_classes.LatexObject):
-    """The corresponding author of this article."""
+            email = pylatex.Command(
+                command="email",
+                arguments=self.email,
+            ).dumps()
 
-    name: str
-    """Name of the corresponding author"""
+            result += f"\n{corresponding_author}\n{email}"
 
-    email: str
-    """Email address of the corresponding author"""
-
-    def dumps(self) -> str:
-        author = pylatex.Command(
-            command="correspondingauthor",
-            arguments=self.name,
-        )
-        email = pylatex.Command(
-            command="email",
-            arguments=self.email,
-        )
-        return author.dumps() + email.dumps()
+        return result
 
 
 @dataclasses.dataclass

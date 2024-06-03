@@ -41,6 +41,7 @@ class TestAffiliation:
         aastex.Author(
             name="Jane Doe",
             affiliation=aastex.Affiliation("Fancy University"),
+            email="jane.doe@tmp.com",
         ),
     ],
 )
@@ -51,26 +52,10 @@ class TestAuthor:
     def test_affiliation(self, a: aastex.Author):
         assert isinstance(a.affiliation, aastex.Affiliation)
 
-    def test_dumps(self, a: aastex.Author):
-        assert isinstance(a.dumps(), str)
-
-
-@pytest.mark.parametrize(
-    argnames="a",
-    argvalues=[
-        aastex.CorrespondingAuthor(
-            name="Jane Doe",
-            email="jane.doe@tmp.com",
-        ),
-    ],
-)
-class TestCorrespondingAuthor:
-
-    def test_name(self, a: aastex.Author):
-        assert isinstance(a.name, str)
-
     def test_email(self, a: aastex.Author):
-        assert isinstance(a.email, str)
+        result = a.email
+        if result is not None:
+            assert isinstance(result, str)
 
     def test_dumps(self, a: aastex.Author):
         assert isinstance(a.dumps(), str)
