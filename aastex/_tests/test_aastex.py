@@ -58,6 +58,27 @@ class TestAuthor:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.CorrespondingAuthor(
+            name="Jane Doe",
+            email="jane.doe@tmp.com",
+        ),
+    ]
+)
+class TestCorrespondingAuthor:
+
+    def test_name(self, a: aastex.Author):
+        assert isinstance(a.name, str)
+
+    def test_email(self, a: aastex.Author):
+        assert isinstance(a.email, str)
+
+    def test_dumps(self, a: aastex.Author):
+        assert isinstance(a.dumps(), str)
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Acronym(
             acronym="NASA",
             name_full="National Aeronautical and Space Administration",
