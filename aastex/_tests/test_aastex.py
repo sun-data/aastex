@@ -41,7 +41,7 @@ class TestAffiliation:
         aastex.Author(
             name="Jane Doe",
             affiliation=aastex.Affiliation("Fancy University"),
-            email="jane.doe@tmp.com"
+            email="jane.doe@tmp.com",
         ),
     ],
 )

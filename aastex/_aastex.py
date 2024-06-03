@@ -95,7 +95,7 @@ class Author(pylatex.base_classes.LatexObject):
         if self.email is not None:
             corresponding_author = pylatex.Command(
                 command="correspondingauthor",
-                arguments=self.name
+                arguments=self.name,
             ).dumps()
 
             email = pylatex.Command(
