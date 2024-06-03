@@ -62,7 +62,7 @@ class TestAuthor:
             name="Jane Doe",
             email="jane.doe@tmp.com",
         ),
-    ]
+    ],
 )
 class TestCorrespondingAuthor:
 

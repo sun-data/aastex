@@ -96,7 +96,7 @@ class CorrespondingAuthor(pylatex.base_classes.LatexObject):
     def dumps(self) -> str:
         author = pylatex.Command(
             command="correspondingauthor",
-            arguments=self.name
+            arguments=self.name,
         )
         email = pylatex.Command(
             command="email",
