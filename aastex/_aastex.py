@@ -23,6 +23,7 @@ __all__ = [
     "Title",
     "Affiliation",
     "Author",
+    "CorrespondingAuthor",
     "Acronym",
     "Abstract",
     "Section",
@@ -80,6 +81,28 @@ class Author(pylatex.base_classes.LatexObject):
 
     def dumps(self) -> str:
         return pylatex.Command("author", self.name).dumps() + self.affiliation.dumps()
+
+
+@dataclasses.dataclass
+class CorrespondingAuthor(pylatex.base_classes.LatexObject):
+    """The corresponding author of this article."""
+
+    name: str
+    """Name of the corresponding author"""
+
+    email: str
+    """Email address of the corresponding author"""
+
+    def dumps(self) -> str:
+        author = pylatex.Command(
+            command="correspondingauthor",
+            arguments=self.name,
+        )
+        email = pylatex.Command(
+            command="email",
+            arguments=self.email,
+        )
+        return author.dumps() + email.dumps()
 
 
 @dataclasses.dataclass
