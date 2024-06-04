@@ -79,6 +79,9 @@ class Author(pylatex.base_classes.LatexObject):
     affiliation: Affiliation
     """The organization affiliated with the author"""
 
+    orcid: None | str = None
+    """The optional ORCID of the author."""
+
     email: None | str = None
     """
     The optional email address of the author.
@@ -88,8 +91,15 @@ class Author(pylatex.base_classes.LatexObject):
     """
 
     def dumps(self) -> str:
-        author = pylatex.Command("author", self.name).dumps()
+
+        author = pylatex.Command(
+            command="author",
+            arguments=self.name,
+            options=NoEscape(self.orcid) if self.orcid is not None else None,
+        ).dumps()
+
         affilation = self.affiliation.dumps()
+
         result = f"{author}\n{affilation}"
 
         if self.email is not None:
