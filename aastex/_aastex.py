@@ -95,7 +95,7 @@ class Author(pylatex.base_classes.LatexObject):
         author = pylatex.Command(
             command="author",
             arguments=self.name,
-            options=NoEscape(self.orcid),
+            options=NoEscape(self.orcid) if self.orcid is not None else None,
         ).dumps()
 
         affilation = self.affiliation.dumps()
