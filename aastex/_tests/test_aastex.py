@@ -110,6 +110,25 @@ class TestAcronym:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.Variable("foo", 2),
+        aastex.Variable("bar", 3 * u.AA),
+    ]
+)
+class TestVariable:
+
+    def test_name(self, a: aastex.Variable):
+        assert isinstance(a.name, str)
+
+    def test_value(self, a: aastex.Variable):
+        assert isinstance(a.value, (int, float, u.Quantity))
+
+    def test_dumps(self, a: aastex.Variable):
+        assert isinstance(a.dumps(), str)
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Abstract(),
     ],
 )
