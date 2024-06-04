@@ -41,6 +41,7 @@ class TestAffiliation:
         aastex.Author(
             name="Jane Doe",
             affiliation=aastex.Affiliation("Fancy University"),
+            orcid="0000-0000-0000-0000",
             email="jane.doe@tmp.com",
         ),
     ],
@@ -51,6 +52,12 @@ class TestAuthor:
 
     def test_affiliation(self, a: aastex.Author):
         assert isinstance(a.affiliation, aastex.Affiliation)
+
+    def test_orcid(self, a: aastex.Author):
+        result = a.orcid
+        if result is not None:
+            assert isinstance(result, str)
+        assert result in a.dumps()
 
     def test_email(self, a: aastex.Author):
         result = a.email
