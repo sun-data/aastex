@@ -112,7 +112,7 @@ class TestAcronym:
     argvalues=[
         aastex.Variable("foo", 2),
         aastex.Variable("bar", 3 * u.AA),
-    ]
+    ],
 )
 class TestVariable:
 
