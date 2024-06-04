@@ -173,6 +173,9 @@ class Acronym(pylatex.base_classes.LatexObject):
 
 @dataclasses.dataclass
 class Variable(pylatex.base_classes.LatexObject):
+    """
+    A wrapper around the ``\\newcommand`` LaTeX command.
+    """
 
     name: str
     """The name of the variable."""
