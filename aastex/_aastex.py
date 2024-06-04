@@ -24,6 +24,7 @@ __all__ = [
     "Affiliation",
     "Author",
     "Acronym",
+    "Variable",
     "Abstract",
     "Section",
     "Subsection",
@@ -168,6 +169,39 @@ class Acronym(pylatex.base_classes.LatexObject):
                 ],
             ).dumps()
         return command
+
+
+@dataclasses.dataclass
+class Variable(pylatex.base_classes.LatexObject):
+    """
+    A wrapper around the ``\\newcommand`` LaTeX command.
+    """
+
+    name: str
+    """The name of the variable."""
+
+    value: float | u.Quantity
+    """The value of the variable."""
+
+    @property
+    def _name(self) -> str:
+        return NoEscape(f"\\{self.name}")
+
+    @property
+    def _value(self) -> str:
+        v = self.value
+        if isinstance(v, u.Quantity):
+            v = f"{v:latex_inline}"
+            v = rf"\ensuremath{{{v[1:~0]}}}"
+        else:
+            v = str(v)
+        return NoEscape(v)
+
+    def dumps(self) -> str:
+        return Command(
+            command="newcommand",
+            arguments=[self._name, self._value],
+        ).dumps()
 
 
 class Abstract(pylatex.base_classes.Environment):
