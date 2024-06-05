@@ -188,6 +188,10 @@ class TestFigure:
 
         assert r"\includegraphics" in a.dumps()
 
+    def test_add_caption(self, a: aastex.Figure):
+        a.add_caption("foo")
+        assert r"\caption" in a.dumps()
+
 
 @pytest.mark.parametrize(
     argnames="a",

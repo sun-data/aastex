@@ -272,16 +272,18 @@ class Figure(
             position=position,
             **kwargs,
         )
-        if isinstance(label, Label):
-            self._label = label
-        else:
+        self.label = label
+
+    @property
+    def _label(self) -> Label:
+        label = self.label
+        if not isinstance(label, Label):
             if ":" in label:
                 label = label.split(":", 1)
-                self._label = Label(Marker(label[1], label[0]))
+                label = Label(Marker(label[1], label[0]))
             else:
-                self._label = Label(Marker(label, self.marker_prefix))
-
-        self.append(self._label)
+                label = Label(Marker(label, self.marker_prefix))
+        return label
 
     def __format__(self, format_spec):
         return Ref(self._label.marker).dumps()
@@ -345,6 +347,10 @@ class Figure(
         filename = self._save_fig(fig, *args, extension=extension, **kwargs)
 
         self.add_image(filename, **add_image_kwargs)
+
+    def add_caption(self, caption) -> None:
+        super().add_caption(caption)
+        self.append(self._label)
 
 
 class FigureStar(
