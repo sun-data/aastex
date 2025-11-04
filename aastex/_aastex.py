@@ -98,10 +98,13 @@ class Author(pylatex.base_classes.LatexObject):
         show = None
 
         if self.corresponding:
-            result += pylatex.Command(
-                command="correspondingauthor",
-                arguments=self.name,
-            ).dumps() + "\n"
+            result += (
+                pylatex.Command(
+                    command="correspondingauthor",
+                    arguments=self.name,
+                ).dumps()
+                + "\n"
+            )
             show = "show"
 
         author = pylatex.Command(
@@ -265,6 +268,7 @@ class Figure(
     pylatex.Figure,
 ):
     marker_prefix = "fig"
+    # separate_paragraph = False
 
     def __init__(
         self,
