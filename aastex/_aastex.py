@@ -95,11 +95,14 @@ class Author(pylatex.base_classes.LatexObject):
 
         result = ""
 
+        show = None
+
         if self.corresponding:
             result += pylatex.Command(
                 command="correspondingauthor",
                 arguments=self.name,
-            ).dumps()
+            ).dumps() + "\n"
+            show = "show"
 
         author = pylatex.Command(
             command="author",
@@ -110,11 +113,12 @@ class Author(pylatex.base_classes.LatexObject):
         email = pylatex.Command(
             command="email",
             arguments=self.email,
+            options=show,
         ).dumps()
 
         affilation = self.affiliation.dumps()
 
-        result = f"{author}\n{email}\n{affilation}"
+        result += f"{author}\n{email}\n{affilation}"
 
         return result
 
