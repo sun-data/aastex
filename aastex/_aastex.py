@@ -80,18 +80,26 @@ class Author(pylatex.base_classes.LatexObject):
     affiliation: Affiliation
     """The organization affiliated with the author"""
 
+    email: None | str = None
+    """
+    The email address of the author.
+    """
+
     orcid: None | str = None
     """The optional ORCID of the author."""
 
-    email: None | str = None
-    """
-    The optional email address of the author.
-    
-    If this is not :obj:`None`, this author is assumed to be the corresponding
-    author.
-    """
+    corresponding: bool = False
+    """Whether this author is the corresponding author."""
 
     def dumps(self) -> str:
+
+        result = ""
+
+        if self.corresponding:
+            result += pylatex.Command(
+                command="correspondingauthor",
+                arguments=self.name,
+            ).dumps()
 
         author = pylatex.Command(
             command="author",
@@ -99,22 +107,14 @@ class Author(pylatex.base_classes.LatexObject):
             options=NoEscape(self.orcid) if self.orcid is not None else None,
         ).dumps()
 
+        email = pylatex.Command(
+            command="email",
+            arguments=self.email,
+        ).dumps()
+
         affilation = self.affiliation.dumps()
 
-        result = f"{author}\n{affilation}"
-
-        if self.email is not None:
-            corresponding_author = pylatex.Command(
-                command="correspondingauthor",
-                arguments=self.name,
-            ).dumps()
-
-            email = pylatex.Command(
-                command="email",
-                arguments=self.email,
-            ).dumps()
-
-            result += f"\n{corresponding_author}\n{email}"
+        result = f"{author}\n{email}\n{affilation}"
 
         return result
 
@@ -417,7 +417,7 @@ class Document(pylatex.Document):
     def __init__(
         self,
         default_filepath: str | pathlib.Path = "default_filepath",
-        documentclass: str = "aastex631",
+        documentclass: str = "aastex701",
         document_options: None | str | list[str] = None,
         fontenc: str = "T1",
         inputenc: str = "utf8",
@@ -456,7 +456,7 @@ class Document(pylatex.Document):
                 "\\restoresymbol{SIX}{tablenum}\n"
             )
         )
-        self.preamble.append(pylatex.Command("bibliographystyle", "aasjournal"))
+        self.preamble.append(pylatex.Command("bibliographystyle", "aasjournalv7"))
 
     def set_variable_quantity(
         self,
