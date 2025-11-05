@@ -1,5 +1,7 @@
 import dataclasses
 import pathlib
+import shutil
+
 import matplotlib.figure
 import astropy.units as u
 import uuid
@@ -491,6 +493,41 @@ class Document(pylatex.Document):
                 )
             ),
         )
+
+    def generate_pdf(self, filepath=None, *, clean=True, clean_tex=True,
+                     compiler=None, compiler_args=None, silent=True,):
+
+        base = pathlib.Path(__file__).parent
+        cls = base / "aastex701.cls"
+        bst = base / "aasjournalv7.bst"
+        orcid = base / "orcid-ID.png"
+
+        filepath = pathlib.Path(filepath)
+
+        directory = filepath.parent
+        directory.mkdir(parents=True, exist_ok=True)
+
+        cls_copy = directory / cls.name
+        bst_copy = directory / bst.name
+        orcid_copy = directory / orcid.name
+
+        shutil.copyfile(cls, cls_copy)
+        shutil.copyfile(bst, bst_copy)
+        shutil.copyfile(orcid, orcid_copy)
+
+        super().generate_pdf(
+            filepath=filepath,
+            clean=clean,
+            clean_tex=clean_tex,
+            compiler=compiler,
+            compiler_args=compiler_args,
+            silent=silent,
+        )
+
+        if clean_tex:
+            cls_copy.unlink()
+            bst_copy.unlink()
+            orcid_copy.unlink()
 
 
 class Bibliography(pylatex.base_classes.CommandBase):
