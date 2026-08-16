@@ -42,4 +42,8 @@ Documentation = "https://aastex.readthedocs.io/en/latest"
 [tool.setuptools_scm]
 
 [tool.setuptools.package-data]
-named_arrays = ["py.typed"]
+aastex = [
+    "*.cls",
+    "*.bst",
+    "*.png",
+]
