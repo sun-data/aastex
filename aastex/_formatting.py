@@ -11,8 +11,8 @@ def format_quantity(
     scientific_notation: None | bool = None,
     digits_after_decimal: int = 3,
 ) -> str:
-    estr = "${0.value:0." + str(digits_after_decimal) + "e}\,${0.unit:latex_inline}"
-    fstr = "${0.value:0." + str(digits_after_decimal) + "f}\,${0.unit:latex_inline}"
+    estr = r"${0.value:0." + str(digits_after_decimal) + r"e}\,${0.unit:latex_inline}"
+    fstr = r"${0.value:0." + str(digits_after_decimal) + r"f}\,${0.unit:latex_inline}"
 
     if scientific_notation is None:
         if np.any(np.abs(a.value) > 0.1):

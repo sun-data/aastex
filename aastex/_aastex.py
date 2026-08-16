@@ -332,20 +332,20 @@ class Figure(
         **kwargs,
     ):
         """
-        Add a :class:`matplotlib.Figure` to the this :class:`Figure`
+        Add a :class:`matplotlib.Figure` to this :class:`Figure`
 
         Parameters
         ----------
         fig
-            matploblib figure to add to tis document
+            :mod:`matplotlib` figure to add to this document
         args
             Arguments passed to plt.savefig for displaying the plot.
         extension
-            extension of image file indicating figure file type
+            The file type extension to save the image as.
         kwargs
             Keyword arguments passed to plt.savefig for displaying the plot. In
             case these contain ``width`` or ``placement``, they will be used
-            for the same purpose as in the add_image command. Namely the width
+            for the same purpose as in the add_image command. Namely, the width
             and placement of the generated plot in the LaTeX document.
         """
         add_image_kwargs = {}
@@ -494,40 +494,75 @@ class Document(pylatex.Document):
             ),
         )
 
-    def generate_pdf(self, filepath=None, *, clean=True, clean_tex=True,
-                     compiler=None, compiler_args=None, silent=True,):
+    def generate_pdf(
+        self,
+        filepath: None | str | pathlib.Path = None,
+        *,
+        clean: bool = True,
+        clean_tex: bool = True,
+        compiler: None | str = None,
+        compiler_args: None | list[str] = None,
+        silent: bool = True,
+    ) -> None:
+        """
+        Generate a pdf file from this document.
 
-        base = pathlib.Path(__file__).parent
-        cls = base / "aastex701.cls"
-        bst = base / "aasjournalv7.bst"
-        orcid = base / "orcid-ID.png"
+        The AASTeX class file, the bibliography style, and the ORCID logo are
+        copied into the build directory before compiling, since the ``.tex``
+        file expects to find them alongside itself.
+        Any of these files already present in the build directory is left
+        alone, and only the copies made here are removed afterwards.
+
+        Parameters
+        ----------
+        filepath
+            The name of the file (without the ``.pdf`` extension).
+            If :obj:`None`, :attr:`default_filepath` is used.
+        clean
+            Whether the non-pdf files created during compilation should be
+            removed.
+        clean_tex
+            Whether the generated tex file should be removed.
+        compiler
+            The name of the LaTeX compiler to use.
+            If :obj:`None`, ``latexmk`` and then ``pdflatex`` are tried.
+        compiler_args
+            Extra arguments to pass to the LaTeX compiler.
+        silent
+            Whether to hide the output of the compiler.
+        """
+
+        if filepath is None:
+            filepath = self.default_filepath
 
         filepath = pathlib.Path(filepath)
 
         directory = filepath.parent
         directory.mkdir(parents=True, exist_ok=True)
 
-        cls_copy = directory / cls.name
-        bst_copy = directory / bst.name
-        orcid_copy = directory / orcid.name
+        base = pathlib.Path(__file__).parent
 
-        shutil.copyfile(cls, cls_copy)
-        shutil.copyfile(bst, bst_copy)
-        shutil.copyfile(orcid, orcid_copy)
+        copies = []
+        for name in ("aastex701.cls", "aasjournalv7.bst", "orcid-ID.png"):
+            destination = directory / name
+            if destination.exists():
+                continue
+            shutil.copyfile(base / name, destination)
+            copies.append(destination)
 
-        super().generate_pdf(
-            filepath=filepath,
-            clean=clean,
-            clean_tex=clean_tex,
-            compiler=compiler,
-            compiler_args=compiler_args,
-            silent=silent,
-        )
-
-        if clean_tex:
-            cls_copy.unlink()
-            bst_copy.unlink()
-            orcid_copy.unlink()
+        try:
+            super().generate_pdf(
+                filepath=filepath,
+                clean=clean,
+                clean_tex=clean_tex,
+                compiler=compiler,
+                compiler_args=compiler_args,
+                silent=silent,
+            )
+        finally:
+            if clean_tex:
+                for destination in copies:
+                    destination.unlink(missing_ok=True)
 
 
 class Bibliography(pylatex.base_classes.CommandBase):
