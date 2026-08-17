@@ -1,5 +1,7 @@
 import dataclasses
 import pathlib
+import shutil
+
 import matplotlib.figure
 import astropy.units as u
 import uuid
@@ -80,18 +82,32 @@ class Author(pylatex.base_classes.LatexObject):
     affiliation: Affiliation
     """The organization affiliated with the author"""
 
+    email: None | str = None
+    """
+    The email address of the author.
+    """
+
     orcid: None | str = None
     """The optional ORCID of the author."""
 
-    email: None | str = None
-    """
-    The optional email address of the author.
-    
-    If this is not :obj:`None`, this author is assumed to be the corresponding
-    author.
-    """
+    corresponding: bool = False
+    """Whether this author is the corresponding author."""
 
     def dumps(self) -> str:
+
+        result = ""
+
+        show = None
+
+        if self.corresponding:
+            result += (
+                pylatex.Command(
+                    command="correspondingauthor",
+                    arguments=self.name,
+                ).dumps()
+                + "\n"
+            )
+            show = "show"
 
         author = pylatex.Command(
             command="author",
@@ -99,22 +115,15 @@ class Author(pylatex.base_classes.LatexObject):
             options=NoEscape(self.orcid) if self.orcid is not None else None,
         ).dumps()
 
+        email = pylatex.Command(
+            command="email",
+            arguments=self.email,
+            options=show,
+        ).dumps()
+
         affilation = self.affiliation.dumps()
 
-        result = f"{author}\n{affilation}"
-
-        if self.email is not None:
-            corresponding_author = pylatex.Command(
-                command="correspondingauthor",
-                arguments=self.name,
-            ).dumps()
-
-            email = pylatex.Command(
-                command="email",
-                arguments=self.email,
-            ).dumps()
-
-            result += f"\n{corresponding_author}\n{email}"
+        result += f"{author}\n{email}\n{affilation}"
 
         return result
 
@@ -261,6 +270,7 @@ class Figure(
     pylatex.Figure,
 ):
     marker_prefix = "fig"
+    # separate_paragraph = False
 
     def __init__(
         self,
@@ -322,20 +332,20 @@ class Figure(
         **kwargs,
     ):
         """
-        Add a :class:`matplotlib.Figure` to the this :class:`Figure`
+        Add a :class:`matplotlib.Figure` to this :class:`Figure`
 
         Parameters
         ----------
         fig
-            matploblib figure to add to tis document
+            :mod:`matplotlib` figure to add to this document
         args
             Arguments passed to plt.savefig for displaying the plot.
         extension
-            extension of image file indicating figure file type
+            The file type extension to save the image as.
         kwargs
             Keyword arguments passed to plt.savefig for displaying the plot. In
             case these contain ``width`` or ``placement``, they will be used
-            for the same purpose as in the add_image command. Namely the width
+            for the same purpose as in the add_image command. Namely, the width
             and placement of the generated plot in the LaTeX document.
         """
         add_image_kwargs = {}
@@ -417,7 +427,7 @@ class Document(pylatex.Document):
     def __init__(
         self,
         default_filepath: str | pathlib.Path = "default_filepath",
-        documentclass: str = "aastex631",
+        documentclass: str = "aastex701",
         document_options: None | str | list[str] = None,
         fontenc: str = "T1",
         inputenc: str = "utf8",
@@ -448,15 +458,7 @@ class Document(pylatex.Document):
             data=data,
         )
         self.escape = False
-        self.preamble.append(
-            NoEscape(
-                "\\usepackage{savesym}\n"
-                "\\savesymbol{tablenum}\n"
-                "\\usepackage{siunitx}\n"
-                "\\restoresymbol{SIX}{tablenum}\n"
-            )
-        )
-        self.preamble.append(pylatex.Command("bibliographystyle", "aasjournal"))
+        self.preamble.append(pylatex.Command("bibliographystyle", "aasjournalv7"))
 
     def set_variable_quantity(
         self,
@@ -491,6 +493,76 @@ class Document(pylatex.Document):
                 )
             ),
         )
+
+    def generate_pdf(
+        self,
+        filepath: None | str | pathlib.Path = None,
+        *,
+        clean: bool = True,
+        clean_tex: bool = True,
+        compiler: None | str = None,
+        compiler_args: None | list[str] = None,
+        silent: bool = True,
+    ) -> None:
+        """
+        Generate a pdf file from this document.
+
+        The AASTeX class file, the bibliography style, and the ORCID logo are
+        copied into the build directory before compiling, since the ``.tex``
+        file expects to find them alongside itself.
+        Any of these files already present in the build directory is left
+        alone, and only the copies made here are removed afterwards.
+
+        Parameters
+        ----------
+        filepath
+            The name of the file (without the ``.pdf`` extension).
+            If :obj:`None`, :attr:`default_filepath` is used.
+        clean
+            Whether the non-pdf files created during compilation should be
+            removed.
+        clean_tex
+            Whether the generated tex file should be removed.
+        compiler
+            The name of the LaTeX compiler to use.
+            If :obj:`None`, ``latexmk`` and then ``pdflatex`` are tried.
+        compiler_args
+            Extra arguments to pass to the LaTeX compiler.
+        silent
+            Whether to hide the output of the compiler.
+        """
+
+        if filepath is None:
+            filepath = self.default_filepath
+
+        filepath = pathlib.Path(filepath)
+
+        directory = filepath.parent
+        directory.mkdir(parents=True, exist_ok=True)
+
+        base = pathlib.Path(__file__).parent
+
+        copies = []
+        for name in ("aastex701.cls", "aasjournalv7.bst", "orcid-ID.png"):
+            destination = directory / name
+            if destination.exists():
+                continue
+            shutil.copyfile(base / name, destination)
+            copies.append(destination)
+
+        try:
+            super().generate_pdf(
+                filepath=filepath,
+                clean=clean,
+                clean_tex=clean_tex,
+                compiler=compiler,
+                compiler_args=compiler_args,
+                silent=silent,
+            )
+        finally:
+            if clean_tex:
+                for destination in copies:
+                    destination.unlink(missing_ok=True)
 
 
 class Bibliography(pylatex.base_classes.CommandBase):

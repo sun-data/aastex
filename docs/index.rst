@@ -54,7 +54,12 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         'Montana State University, Department of Physics, '
         'P.O. Box 173840, Bozeman, MT 59717, USA'
     )
-    author = aastex.Author('Roy T. Smart', msu)
+    author = aastex.Author(
+        name='Roy T. Smart',
+        affiliation=msu,
+        email="roytsmart@gmail.com",
+        corresponding=True,
+    )
     doc.append(author)
 
     # Define an acronym to be used in the body of the document

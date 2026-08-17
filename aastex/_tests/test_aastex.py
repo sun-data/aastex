@@ -1,6 +1,7 @@
 import pathlib
 
 import pytest
+import pylatex
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
@@ -43,6 +44,7 @@ class TestAffiliation:
             affiliation=aastex.Affiliation("Fancy University"),
             orcid="0000-0000-0000-0000",
             email="jane.doe@tmp.com",
+            corresponding=True,
         ),
     ],
 )
@@ -313,6 +315,72 @@ class TestDocument:
         )
 
         assert name in a.dumps()
+
+    def test_generate_pdf(
+        self,
+        a: aastex.Document,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+    ):
+        assets = ["aastex701.cls", "aasjournalv7.bst", "orcid-ID.png"]
+        during = []
+
+        def compile(self, filepath, **kwargs):
+            during.extend(n for n in assets if (tmp_path / n).exists())
+
+        monkeypatch.setattr(pylatex.Document, "generate_pdf", compile)
+
+        a.generate_pdf(tmp_path / "article")
+
+        assert during == assets
+        assert not any((tmp_path / n).exists() for n in assets)
+
+    def test_generate_pdf_clean_tex(
+        self,
+        a: aastex.Document,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+    ):
+        assets = ["aastex701.cls", "aasjournalv7.bst", "orcid-ID.png"]
+
+        monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+        a.generate_pdf(tmp_path / "article", clean_tex=False)
+
+        assert all((tmp_path / n).exists() for n in assets)
+
+    def test_generate_pdf_default_filepath(
+        self,
+        a: aastex.Document,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+    ):
+        observed = []
+
+        def compile(self, filepath, **kwargs):
+            observed.append(filepath)
+
+        monkeypatch.setattr(pylatex.Document, "generate_pdf", compile)
+        monkeypatch.setattr(a, "default_filepath", str(tmp_path / "article"))
+
+        a.generate_pdf()
+
+        assert observed == [tmp_path / "article"]
+
+    def test_generate_pdf_existing_asset(
+        self,
+        a: aastex.Document,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+    ):
+        existing = tmp_path / "aastex701.cls"
+        existing.write_text("a locally modified class file")
+
+        monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+        a.generate_pdf(tmp_path / "article")
+
+        assert existing.read_text() == "a locally modified class file"
 
 
 @pytest.mark.parametrize(

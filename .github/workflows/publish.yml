@@ -10,9 +10,13 @@ jobs:
     if: startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - name: Install pypa/build
         run: >-
           python -m
@@ -26,6 +30,13 @@ jobs:
           --sdist
           --wheel
           --outdir dist/
+      - name: Check the built version matches the tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          if [ ! -f "dist/aastex-$tag.tar.gz" ]; then
+            echo "::error::expected dist/aastex-$tag.tar.gz but built: $(ls dist)"
+            exit 1
+          fi
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
