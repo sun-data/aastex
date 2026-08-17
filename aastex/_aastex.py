@@ -307,6 +307,17 @@ class _Image:
             shutil.copyfile(self.source, destination)
         return destination
 
+    def is_same_file(self, other: "_Image") -> bool:
+        """
+        Whether this image and ``other`` are the same file on disk.
+
+        Two generated images are never the same file, since each is saved
+        from its own :mod:`matplotlib` figure.
+        """
+        if self.figure is not None or other.figure is not None:
+            return False
+        return self.source == other.source
+
 
 def _descendants(obj: object) -> list:
     """
@@ -702,7 +713,16 @@ class Document(pylatex.Document):
             shutil.copyfile(base / name, destination)
             copies.append(destination)
 
+        seen = {}
         for image in self.images:
+            other = seen.get(image.name)
+            if other is not None and not image.is_same_file(other):
+                raise ValueError(
+                    f"two different images are named {image.name!r}, which "
+                    f"usually means two figures share the label "
+                    f"{pathlib.Path(image.name).stem!r}"
+                )
+            seen[image.name] = image
             image.write(directory)
 
         try:

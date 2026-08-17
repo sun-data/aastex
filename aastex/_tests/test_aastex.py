@@ -7,9 +7,13 @@ import zipfile
 import pytest
 import pylatex
 import numpy as np
-import matplotlib.pyplot as plt
-import astropy.units as u
-import aastex
+import matplotlib
+
+matplotlib.use("agg")
+
+import matplotlib.pyplot as plt  # noqa: E402
+import astropy.units as u  # noqa: E402
+import aastex  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -207,11 +211,17 @@ class TestFigure:
 
 
 def _figure_with_plot(label: str = "myFigure", **kwargs) -> aastex.Figure:
-    """A figure containing a single matplotlib plot, for the tests below."""
+    """
+    A figure containing a single matplotlib plot, for the tests below.
+
+    The plot is closed after it is added, as in the example in the
+    documentation, since images are not saved until the document is compiled.
+    """
     result = aastex.Figure(label)
     fig, ax = plt.subplots()
     ax.plot(np.random.normal(size=11))
     result.add_fig(fig, width=None, **kwargs)
+    plt.close(fig)
     return result
 
 
@@ -490,6 +500,43 @@ class TestDocument:
         a.generate_pdf(tmp_path / "article")
 
         assert (tmp_path / "myFigure.pdf").exists()
+
+
+def test_generate_pdf_duplicate_label(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+):
+    """Two figures sharing a label would otherwise silently overwrite each other."""
+    doc = aastex.Document()
+    doc.append(_figure_with_plot())
+    doc.append(_figure_with_plot())
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+    with pytest.raises(ValueError, match="myFigure"):
+        doc.generate_pdf(tmp_path / "article")
+
+
+def test_generate_pdf_repeated_image(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+):
+    """The same image file may be used by more than one figure."""
+    source = tmp_path / "logo.png"
+    plt.figure().savefig(source)
+
+    doc = aastex.Document()
+    for label in ("first", "second"):
+        figure = aastex.Figure(label)
+        figure.add_image(source, width=None)
+        doc.append(figure)
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+    build = tmp_path / "build"
+    doc.generate_pdf(build / "article")
+
+    assert (build / "logo.png").exists()
 
 
 def test_document_images():
