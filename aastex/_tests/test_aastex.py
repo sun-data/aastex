@@ -225,6 +225,29 @@ def _figure_with_plot(label: str = "myFigure", **kwargs) -> aastex.Figure:
     return result
 
 
+def test_image_is_public():
+    """The images of a figure are instances of a documented, public class."""
+    a = _figure_with_plot()
+    (image,) = a.images
+
+    assert isinstance(image, aastex.Image)
+    assert aastex.Image.__name__ == "Image"
+
+
+def test_image_write_directly(tmp_path: pathlib.Path):
+    """An image can be constructed and written on its own."""
+    source = tmp_path / "diagram.pdf"
+    plt.figure().savefig(source)
+
+    image = aastex.Image(name="renamed.pdf", source=source)
+
+    destination = tmp_path / "build"
+    destination.mkdir()
+
+    assert image.write(destination) == destination / "renamed.pdf"
+    assert (destination / "renamed.pdf").exists()
+
+
 def test_figure_image_name():
     a = _figure_with_plot()
     (image,) = a.images

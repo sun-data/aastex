@@ -43,6 +43,7 @@ __all__ = [
     "Package",
     "Marker",
     "Label",
+    "Image",
     "Figure",
     "Bibliography",
 ]
@@ -289,7 +290,7 @@ class Subsubsection(
 
 
 @dataclasses.dataclass
-class _Image:
+class Image:
     """
     An image file which needs to live in the build directory next to the
     ``.tex`` file which references it.
@@ -297,6 +298,11 @@ class _Image:
     Images are written by :meth:`Document.generate_pdf` instead of when they
     are added to a :class:`Figure`, since the build directory is not known
     until the document is compiled.
+
+    Instances are created by :meth:`Figure.add_fig` and :meth:`Figure.add_image`
+    rather than directly, and the images belonging to a figure or a whole
+    document can be inspected using :attr:`Figure.images` and
+    :attr:`Document.images`.
     """
 
     name: str
@@ -325,7 +331,7 @@ class _Image:
             shutil.copyfile(self.source, destination)
         return destination
 
-    def is_same_file(self, other: "_Image") -> bool:
+    def is_same_file(self, other: "Image") -> bool:
         """
         Whether this image and ``other`` are the same file on disk.
 
@@ -361,7 +367,7 @@ def _descendants(obj: object) -> list:
     return result
 
 
-def _images(obj: object) -> list[_Image]:
+def _images(obj: object) -> list[Image]:
     """
     Recursively gather the images referenced by ``obj`` and its children.
     """
@@ -388,10 +394,10 @@ class Figure(
             **kwargs,
         )
         self.label = label
-        self._aastex_images: list[_Image] = []
+        self._aastex_images: list[Image] = []
 
     @property
-    def images(self) -> list[_Image]:
+    def images(self) -> list[Image]:
         """
         The images referenced by this figure.
         """
@@ -451,7 +457,7 @@ class Figure(
         """
         filename = pathlib.Path(filename)
 
-        image = _Image(name=filename.name, source=filename.resolve())
+        image = Image(name=filename.name, source=filename.resolve())
         self._aastex_images.append(image)
 
         super().add_image(
@@ -503,7 +509,7 @@ class Figure(
         else:
             name = f"{filename}.{extension.strip('.')}"
 
-        image = _Image(
+        image = Image(
             name=name,
             figure=fig,
             args=args,
@@ -552,7 +558,7 @@ class Fig(pylatex.base_classes.CommandBase):
     ):
         file = pathlib.Path(file)
 
-        image = _Image(name=file.name, source=file.resolve())
+        image = Image(name=file.name, source=file.resolve())
         self._aastex_images = [image]
 
         super().__init__(
@@ -564,7 +570,7 @@ class Fig(pylatex.base_classes.CommandBase):
         )
 
     @property
-    def images(self) -> list[_Image]:
+    def images(self) -> list[Image]:
         """
         The images referenced by this command.
         """
@@ -665,7 +671,7 @@ class Document(pylatex.Document):
         )
 
     @property
-    def images(self) -> list[_Image]:
+    def images(self) -> list[Image]:
         """
         Every image referenced by this document, in the order they appear.
         """
