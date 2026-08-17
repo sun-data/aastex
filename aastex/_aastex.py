@@ -1,10 +1,12 @@
+import collections
 import dataclasses
 import pathlib
 import shutil
+import tarfile
+import zipfile
 
 import matplotlib.figure
 import astropy.units as u
-import uuid
 import pylatex
 from pylatex import (
     Command,
@@ -268,6 +270,78 @@ class Subsubsection(
     pass
 
 
+@dataclasses.dataclass
+class _Image:
+    """
+    An image file which needs to live in the build directory next to the
+    ``.tex`` file which references it.
+
+    Images are written by :meth:`Document.generate_pdf` instead of when they
+    are added to a :class:`Figure`, since the build directory is not known
+    until the document is compiled.
+    """
+
+    name: str
+    """The name of this image inside the build directory."""
+
+    figure: None | matplotlib.figure.Figure = None
+    """A :mod:`matplotlib` figure to save, if this image is generated."""
+
+    source: None | pathlib.Path = None
+    """The current location of this image, if it is an existing file."""
+
+    args: tuple = ()
+    """Extra arguments passed to :meth:`matplotlib.figure.Figure.savefig`."""
+
+    kwargs: dict = dataclasses.field(default_factory=dict)
+    """Extra keyword arguments passed to :meth:`matplotlib.figure.Figure.savefig`."""
+
+    def write(self, directory: pathlib.Path) -> pathlib.Path:
+        """
+        Save or copy this image into ``directory`` and return its new location.
+        """
+        destination = directory / self.name
+        if self.figure is not None:
+            self.figure.savefig(destination, *self.args, **self.kwargs)
+        elif self.source.resolve() != destination.resolve():
+            shutil.copyfile(self.source, destination)
+        return destination
+
+
+def _descendants(obj: object) -> list:
+    """
+    Recursively gather ``obj`` and everything it contains.
+
+    Both the children of containers and the arguments of commands are
+    searched, since figures can appear inside either.
+    """
+    if isinstance(obj, str):
+        return []
+
+    result = [obj]
+
+    if isinstance(obj, (list, tuple, collections.UserList)):
+        for child in obj:
+            result += _descendants(child)
+
+    arguments = getattr(obj, "arguments", None)
+    if arguments is not None:
+        for child in getattr(arguments, "_positional_args", []):
+            result += _descendants(child)
+
+    return result
+
+
+def _images(obj: object) -> list[_Image]:
+    """
+    Recursively gather the images referenced by ``obj`` and its children.
+    """
+    result = []
+    for descendant in _descendants(obj):
+        result += getattr(descendant, "_aastex_images", [])
+    return result
+
+
 class Figure(
     pylatex.Figure,
 ):
@@ -285,6 +359,14 @@ class Figure(
             **kwargs,
         )
         self.label = label
+        self._aastex_images: list[_Image] = []
+
+    @property
+    def images(self) -> list[_Image]:
+        """
+        The images referenced by this figure.
+        """
+        return self._aastex_images
 
     @property
     def _label(self) -> Label:
@@ -300,41 +382,69 @@ class Figure(
     def __format__(self, format_spec):
         return Ref(self._label.marker).dumps()
 
+    def _name_image(self, extension: str) -> str:
+        """
+        The name to give the next image added to this figure.
+
+        The name is derived from this figure's label so that the image files
+        are recognizable, and an index is appended if this figure already
+        contains an image.
+        """
+        stem = self._label.marker.name
+        index = len(self._aastex_images)
+        if index:
+            stem = f"{stem}-{index + 1}"
+        return f"{stem}.{extension.strip('.')}"
+
     def add_image(
         self,
-        filename: pathlib.Path,
+        filename: str | pathlib.Path,
         *,
         width: None | str = NoEscape(r"0.8\textwidth"),
         placement: str = NoEscape(r"\centering"),
     ):
+        """
+        Add an existing image file to this :class:`Figure`.
+
+        The image is copied into the build directory by
+        :meth:`Document.generate_pdf`, and is referenced by name so that the
+        generated ``.tex`` file does not depend on where the image was
+        originally stored.
+
+        Parameters
+        ----------
+        filename
+            The location of the image to add to this figure.
+        width
+            The width of the image in the compiled document.
+        placement
+            The placement of the image in the compiled document.
+        """
+        filename = pathlib.Path(filename)
+
+        image = _Image(name=filename.name, source=filename.resolve())
+        self._aastex_images.append(image)
+
         super().add_image(
-            filename=str(filename.resolve()),
+            filename=image.name,
             width=width,
             placement=placement,
         )
-
-    def _save_fig(
-        self,
-        fig: matplotlib.figure.Figure,
-        *args,
-        extension="pdf",
-        **kwargs,
-    ) -> pathlib.Path:
-        tmp_path = pathlib.Path(pylatex.utils.make_temp_dir())
-        filename = f"{str(uuid.uuid4())}.{extension.strip('.')}"
-        filepath = tmp_path / filename
-        fig.savefig(filepath, *args, **kwargs)
-        return filepath
 
     def add_fig(
         self,
         fig: matplotlib.figure.Figure,
         *args,
-        extension="pdf",
+        extension: str = "pdf",
+        filename: None | str = None,
         **kwargs,
     ):
         """
         Add a :class:`matplotlib.Figure` to this :class:`Figure`
+
+        The figure is not saved until the document is compiled by
+        :meth:`Document.generate_pdf`, which saves it into the build directory
+        next to the ``.tex`` file which references it.
 
         Parameters
         ----------
@@ -344,6 +454,9 @@ class Figure(
             Arguments passed to plt.savefig for displaying the plot.
         extension
             The file type extension to save the image as.
+        filename
+            The name to save the image as, without the extension.
+            If :obj:`None`, the name is derived from this figure's label.
         kwargs
             Keyword arguments passed to plt.savefig for displaying the plot. In
             case these contain ``width`` or ``placement``, they will be used
@@ -356,9 +469,23 @@ class Figure(
             if key in kwargs:
                 add_image_kwargs[key] = kwargs.pop(key)
 
-        filename = self._save_fig(fig, *args, extension=extension, **kwargs)
+        if filename is None:
+            name = self._name_image(extension)
+        else:
+            name = f"{filename}.{extension.strip('.')}"
 
-        self.add_image(filename, **add_image_kwargs)
+        image = _Image(
+            name=name,
+            figure=fig,
+            args=args,
+            kwargs=kwargs,
+        )
+        self._aastex_images.append(image)
+
+        super().add_image(
+            filename=image.name,
+            **add_image_kwargs,
+        )
 
     def add_caption(self, caption) -> None:
         super().add_caption(caption)
@@ -390,17 +517,29 @@ class Fig(pylatex.base_classes.CommandBase):
 
     def __init__(
         self,
-        file: pathlib.Path,
+        file: str | pathlib.Path,
         width: str,
         caption: str,
     ):
+        file = pathlib.Path(file)
+
+        image = _Image(name=file.name, source=file.resolve())
+        self._aastex_images = [image]
+
         super().__init__(
             arguments=[
-                NoEscape(str(file.resolve())),
+                NoEscape(image.name),
                 width,
                 caption,
             ]
         )
+
+    @property
+    def images(self) -> list[_Image]:
+        """
+        The images referenced by this command.
+        """
+        return self._aastex_images
 
 
 class LeftFig(Fig):
@@ -496,6 +635,13 @@ class Document(pylatex.Document):
             ),
         )
 
+    @property
+    def images(self) -> list[_Image]:
+        """
+        Every image referenced by this document, in the order they appear.
+        """
+        return _images(self)
+
     def generate_pdf(
         self,
         filepath: None | str | pathlib.Path = None,
@@ -514,6 +660,10 @@ class Document(pylatex.Document):
         file expects to find them alongside itself.
         Any of these files already present in the build directory is left
         alone, and only the copies made here are removed afterwards.
+
+        Every image in this document is also saved into the build directory,
+        so that the build directory contains everything needed to compile the
+        ``.tex`` file.
 
         Parameters
         ----------
@@ -552,6 +702,9 @@ class Document(pylatex.Document):
             shutil.copyfile(base / name, destination)
             copies.append(destination)
 
+        for image in self.images:
+            image.write(directory)
+
         try:
             super().generate_pdf(
                 filepath=filepath,
@@ -565,6 +718,93 @@ class Document(pylatex.Document):
             if clean_tex:
                 for destination in copies:
                     destination.unlink(missing_ok=True)
+
+    def generate_archive(
+        self,
+        filepath: None | str | pathlib.Path = None,
+        *,
+        format: str = "zip",
+        bibliography: None | str | pathlib.Path = None,
+        **kwargs,
+    ) -> pathlib.Path:
+        """
+        Compile this document and gather everything needed to submit it into a
+        single archive.
+
+        The archive is flat, since the
+        `AAS submission system <https://journals.aas.org/pre-submission-checklist-for-aas-journal-authors/>`_
+        cannot parse subdirectories,
+        and it contains the ``.tex`` file, the ``.bbl`` file required by the
+        AAS conversion software, the AASTeX class and bibliography style
+        files, the ORCID logo, and every image in this document.
+
+        Parameters
+        ----------
+        filepath
+            The name of the archive (without the extension).
+            If :obj:`None`, the name of the compiled document is used.
+        format
+            The type of archive to create, either ``"zip"`` or ``"gztar"``.
+        bibliography
+            The location of the ``.bib`` file to include in the archive.
+            If :obj:`None`, no ``.bib`` file is included.
+        kwargs
+            Additional keyword arguments passed to :meth:`generate_pdf`.
+        """
+
+        if filepath is None:
+            filepath = self.default_filepath
+        filepath = pathlib.Path(filepath)
+
+        self.generate_pdf(
+            filepath=filepath,
+            clean=False,
+            clean_tex=False,
+            **kwargs,
+        )
+
+        directory = filepath.parent
+
+        members = [
+            filepath.with_suffix(".tex"),
+            directory / "aastex701.cls",
+            directory / "aasjournalv7.bst",
+            directory / "orcid-ID.png",
+        ]
+
+        members += [directory / image.name for image in self.images]
+
+        # The AAS conversion software requires the .bbl file, so it is only
+        # optional for a document without a bibliography.
+        bbl = filepath.with_suffix(".bbl")
+        cited = any(isinstance(d, Bibliography) for d in _descendants(self))
+        if cited or bbl.exists():
+            members.append(bbl)
+
+        if bibliography is not None:
+            members.append(pathlib.Path(bibliography))
+
+        missing = [m for m in members if not m.exists()]
+        if missing:
+            raise FileNotFoundError(
+                f"the files {[str(m) for m in missing]} are needed to submit "
+                f"this document but were not found"
+            )
+
+        if format == "zip":
+            result = filepath.with_suffix(".zip")
+            with zipfile.ZipFile(result, "w", zipfile.ZIP_DEFLATED) as archive:
+                for member in members:
+                    archive.write(member, arcname=member.name)
+        elif format == "gztar":
+            result = filepath.with_suffix(".tar.gz")
+            with tarfile.open(result, "w:gz") as archive:
+                for member in members:
+                    archive.add(member, arcname=member.name)
+        else:  # pragma: nocover
+            raise ValueError(f"unrecognized format {format!r}")
+
+        return result
 
 
 class Bibliography(pylatex.base_classes.CommandBase):

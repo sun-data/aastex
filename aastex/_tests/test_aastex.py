@@ -1,4 +1,7 @@
 import pathlib
+import subprocess
+import tarfile
+import zipfile
 
 import pytest
 import pylatex
@@ -202,6 +205,87 @@ class TestFigure:
         assert r"\caption" in a.dumps()
 
 
+def _figure_with_plot(label: str = "myFigure", **kwargs) -> aastex.Figure:
+    """A figure containing a single matplotlib plot, for the tests below."""
+    result = aastex.Figure(label)
+    fig, ax = plt.subplots()
+    ax.plot(np.random.normal(size=11))
+    result.add_fig(fig, width=None, **kwargs)
+    return result
+
+
+def test_figure_image_name():
+    a = _figure_with_plot()
+    (image,) = a.images
+
+    assert image.name == "myFigure.pdf"
+    assert "myFigure.pdf" in a.dumps()
+
+
+def test_figure_image_filename():
+    a = _figure_with_plot(filename="f1", extension="png")
+    (image,) = a.images
+
+    assert image.name == "f1.png"
+    assert "f1.png" in a.dumps()
+
+
+def test_figure_image_multiple():
+    a = _figure_with_plot()
+    fig, ax = plt.subplots()
+    ax.plot(np.random.normal(size=11))
+    a.add_fig(fig, width=None)
+
+    first, second = a.images
+
+    assert first.name == "myFigure.pdf"
+    assert second.name == "myFigure-2.pdf"
+
+
+def test_figure_image_write(tmp_path: pathlib.Path):
+    a = _figure_with_plot()
+    (image,) = a.images
+
+    assert image.write(tmp_path) == tmp_path / "myFigure.pdf"
+    assert (tmp_path / "myFigure.pdf").exists()
+
+
+@pytest.mark.parametrize("as_string", [False, True])
+def test_figure_add_image(tmp_path: pathlib.Path, as_string: bool):
+    source = tmp_path / "source" / "diagram.png"
+    source.parent.mkdir()
+    plt.figure().savefig(source)
+
+    a = aastex.Figure("myFigure")
+    a.add_image(str(source) if as_string else source, width=None)
+
+    (image,) = a.images
+
+    assert image.name == "diagram.png"
+    assert "diagram.png" in a.dumps()
+    assert str(source.parent) not in a.dumps()
+
+    destination = tmp_path / "build"
+    destination.mkdir()
+
+    assert image.write(destination) == destination / "diagram.png"
+    assert (destination / "diagram.png").exists()
+
+
+def test_figure_add_image_same_directory(tmp_path: pathlib.Path):
+    """Writing an image that already lives in the build directory is a no-op."""
+    source = tmp_path / "diagram.png"
+    plt.figure().savefig(source)
+
+    a = aastex.Figure("myFigure")
+    a.add_image(source, width=None)
+
+    (image,) = a.images
+
+    assert image.write(tmp_path) == source
+    assert source.exists()
+
+
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
@@ -388,6 +472,161 @@ class TestDocument:
         a.generate_pdf(tmp_path / "article")
 
         assert existing.read_text() == "a locally modified class file"
+
+    def test_generate_pdf_images(
+        self,
+        a: aastex.Document,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+    ):
+        a.append(_figure_with_plot())
+
+        monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+        a.generate_pdf(tmp_path / "article")
+
+        assert (tmp_path / "myFigure.pdf").exists()
+
+
+def test_document_images():
+    figure = _figure_with_plot()
+
+    section = aastex.Section("A section")
+    section.append(figure)
+
+    doc = aastex.Document()
+    doc.append(section)
+
+    assert [i.name for i in doc.images] == ["myFigure.pdf"]
+
+
+def _submittable_document() -> aastex.Document:
+    """A small but complete document, for the archive tests below."""
+    doc = aastex.Document()
+    doc.append(aastex.Title("An interesting article"))
+    doc += [
+        aastex.Author(
+            name="Jane Doe",
+            affiliation=aastex.Affiliation("Fancy University"),
+        )
+    ]
+    section = aastex.Section("A section")
+    section.append("Some text.")
+    section.append(_figure_with_plot())
+    doc.append(section)
+    return doc
+
+
+@pytest.mark.parametrize(
+    argnames="format,suffix",
+    argvalues=[
+        ("zip", ".zip"),
+        ("gztar", ".tar.gz"),
+    ],
+)
+def test_generate_archive(tmp_path: pathlib.Path, format: str, suffix: str):
+    doc = _submittable_document()
+
+    archive = doc.generate_archive(tmp_path / "article", format=format)
+
+    assert archive == (tmp_path / "article").with_suffix(suffix)
+    assert archive.exists()
+
+    if format == "zip":
+        with zipfile.ZipFile(archive) as f:
+            names = f.namelist()
+    else:
+        with tarfile.open(archive) as f:
+            names = f.getnames()
+
+    # the AAS submission system cannot parse subdirectories
+    assert not any("/" in name for name in names)
+
+    assert set(names) == {
+        "article.tex",
+        "aastex701.cls",
+        "aasjournalv7.bst",
+        "orcid-ID.png",
+        "myFigure.pdf",
+    }
+
+
+def test_generate_archive_bibliography(tmp_path: pathlib.Path):
+    """A document with a bibliography must ship the .bbl the AAS requires."""
+    sources = tmp_path / "sources.bib"
+    sources.write_text(
+        "@ARTICLE{Doe2020,\n"
+        "  author = {{Doe}, Jane},\n"
+        '  title = "{An interesting result}",\n'
+        "  journal = {\\apj},\n"
+        "  year = 2020,\n"
+        "  volume = {1},\n"
+        "  pages = {1},\n"
+        "}\n"
+    )
+
+    doc = _submittable_document()
+    doc.append(pylatex.NoEscape(r"We cite \citet{Doe2020}."))
+    doc.append(aastex.Bibliography("sources"))
+
+    archive = doc.generate_archive(
+        tmp_path / "article",
+        bibliography=sources,
+    )
+
+    with zipfile.ZipFile(archive) as f:
+        names = set(f.namelist())
+
+    assert "article.bbl" in names
+    assert "sources.bib" in names
+
+
+def test_generate_archive_compiles(tmp_path: pathlib.Path):
+    """The unpacked archive must compile on its own, with nothing else around it."""
+    doc = _submittable_document()
+
+    archive = doc.generate_archive(tmp_path / "build" / "article")
+
+    clean = tmp_path / "clean"
+    clean.mkdir()
+    with zipfile.ZipFile(archive) as f:
+        f.extractall(clean)
+
+    subprocess.run(
+        args=["latexmk", "-pdf", "-interaction=nonstopmode", "article.tex"],
+        cwd=clean,
+        check=True,
+        capture_output=True,
+    )
+
+    assert (clean / "article.pdf").exists()
+
+
+def test_generate_archive_missing_file(tmp_path: pathlib.Path):
+    doc = _submittable_document()
+
+    with pytest.raises(FileNotFoundError):
+        doc.generate_archive(
+            tmp_path / "article",
+            bibliography=tmp_path / "nonexistent.bib",
+        )
+
+
+def test_document_images_gridline(tmp_path: pathlib.Path):
+    """Images inside a `\\gridline` command are found too."""
+    source = tmp_path / "diagram.pdf"
+    plt.figure().savefig(source)
+
+    doc = aastex.Document()
+    doc.append(
+        aastex.Gridline(
+            [
+                aastex.LeftFig(source, width=r"\textwidth", caption="a caption"),
+            ]
+        )
+    )
+
+    assert [i.name for i in doc.images] == ["diagram.pdf"]
 
 
 @pytest.mark.parametrize(
