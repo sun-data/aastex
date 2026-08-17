@@ -54,18 +54,26 @@ import pylatex
 from ._formatting import *
 from ._aastex import *
 
-#: The width of the full page in inches, spanning both columns of an AASTeX
-#: article, which is the natural figure width for a :class:`FigureStar`.
 text_width_inches = 513.11743 / 72
+"""
+The width of the full page in inches, spanning both columns of an AASTeX
+article, which is the natural figure width for a :class:`FigureStar`.
+"""
 
-#: The width of a single column of an AASTeX article in inches, which is the
-#: natural figure width for a :class:`Figure`.
 column_width_inches = 242.26653 / 72
+"""
+The width of a single column of an AASTeX article in inches, which is the
+natural figure width for a :class:`Figure`.
+"""
 
-#: The LaTeX ``\textwidth`` length, the width of the full page, for use where
-#: a length is expected instead of a number of inches.
 textwidth = pylatex.Command("textwidth")
+"""
+The LaTeX ``\\textwidth`` length, the width of the full page, for use where a
+length is expected instead of a number of inches.
+"""
 
-#: The LaTeX ``\columnwidth`` length, the width of a single column, for use
-#: where a length is expected instead of a number of inches.
 columnwidth = pylatex.Command("columnwidth")
+"""
+The LaTeX ``\\columnwidth`` length, the width of a single column, for use where
+a length is expected instead of a number of inches.
+"""
