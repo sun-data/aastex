@@ -1,0 +1,39 @@
+# Byte-compiled Python
+__pycache__/
+*.py[cod]
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Test and lint caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# Editors
+.idea/
+.vscode/
+.ipynb_checkpoints/
+
+# Documentation builds
+docs/_build/
+docs/_autosummary/
+_readthedocs/
+
+# The example article built by the documentation, which is written beside the
+# .tex file it compiles, along with the figure named after its `data` label.
+an_interesting_article.*
+data.pdf
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
