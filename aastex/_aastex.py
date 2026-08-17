@@ -115,9 +115,11 @@ class Author(pylatex.base_classes.LatexObject):
             options=NoEscape(self.orcid) if self.orcid is not None else None,
         ).dumps()
 
+        # AASTeX v7 requires an `\email` command for every author,
+        # so emit an empty one if no email address was given.
         email = pylatex.Command(
             command="email",
-            arguments=self.email,
+            arguments=self.email if self.email is not None else "",
             options=show,
         ).dumps()
 
