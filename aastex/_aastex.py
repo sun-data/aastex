@@ -48,11 +48,29 @@ __all__ = [
 ]
 
 text_width_inches = 513.11743 / 72
+"""
+The width of the full page in inches, spanning both columns of an AASTeX
+article, which is the natural figure width for a :class:`FigureStar`.
+"""
+
 column_width_inches = 242.26653 / 72
+"""
+The width of a single column of an AASTeX article in inches, which is the
+natural figure width for a :class:`Figure`.
+"""
 
 
 textwidth = pylatex.Command("textwidth")
+"""
+The LaTeX ``\\textwidth`` length, the width of the full page,
+for use where a length is expected instead of a number of inches.
+"""
+
 columnwidth = pylatex.Command("columnwidth")
+"""
+The LaTeX ``\\columnwidth`` length, the width of a single column,
+for use where a length is expected instead of a number of inches.
+"""
 
 
 @dataclasses.dataclass
@@ -451,7 +469,7 @@ class Figure(
         **kwargs,
     ):
         """
-        Add a :class:`matplotlib.Figure` to this :class:`Figure`
+        Add a :class:`matplotlib.figure.Figure` to this :class:`Figure`
 
         The figure is not saved until the document is compiled by
         :meth:`Document.generate_pdf`, which saves it into the build directory

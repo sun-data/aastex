@@ -103,7 +103,7 @@ applied for you no matter how the text is later rearranged.
 
 The abstract is a container like any other section of the document, so text is
 appended to it.
-Here :mod:`lipsum` provides placeholder prose.
+Here the LaTeX ``lipsum`` package provides placeholder prose.
 
 .. jupyter-execute::
 
@@ -133,8 +133,8 @@ Figures are created from :mod:`matplotlib` figures using
 The label given to :class:`aastex.Figure` names both the LaTeX label and the
 image file saved next to the article, and the plot may be closed once it has
 been added, since it is not saved until the document is compiled.
-The constants :attr:`aastex.column_width_inches` and
-:attr:`aastex.text_width_inches` give the width of a column and of the full page,
+The constants :data:`aastex.column_width_inches` and
+:data:`aastex.text_width_inches` give the width of a column and of the full page,
 which are the two useful figure widths in a two column article.
 
 .. jupyter-execute::
@@ -245,6 +245,16 @@ API Reference
     :recursive:
 
     aastex
+
+These constants describe the geometry of a page of an AASTeX article:
+
+.. autosummary::
+    :toctree: _autosummary
+
+    aastex.text_width_inches
+    aastex.column_width_inches
+    aastex.textwidth
+    aastex.columnwidth
 
 |
 
