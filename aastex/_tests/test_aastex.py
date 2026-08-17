@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 import subprocess
 import tarfile
 import zipfile
@@ -307,7 +308,10 @@ class TestFigureStar:
     ],
 )
 class TestFig:
-    pass
+    def test_images(self, a: aastex.Fig):
+        (image,) = a.images
+        assert image.name == "foo.pdf"
+        assert image.name in a.dumps()
 
 
 @pytest.mark.parametrize(
@@ -517,6 +521,20 @@ def _submittable_document() -> aastex.Document:
     return doc
 
 
+def _fake_compiler(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Stand in for the LaTeX compiler, which is not installed everywhere,
+    by writing the files that a real compilation would leave behind.
+    """
+
+    def compile(self, filepath, **kwargs):
+        filepath = pathlib.Path(filepath)
+        filepath.with_suffix(".tex").write_text("a compiled document")
+        filepath.with_suffix(".bbl").write_text("a formatted bibliography")
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", compile)
+
+
 @pytest.mark.parametrize(
     argnames="format,suffix",
     argvalues=[
@@ -524,8 +542,14 @@ def _submittable_document() -> aastex.Document:
         ("gztar", ".tar.gz"),
     ],
 )
-def test_generate_archive(tmp_path: pathlib.Path, format: str, suffix: str):
+def test_generate_archive(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    format: str,
+    suffix: str,
+):
     doc = _submittable_document()
+    _fake_compiler(monkeypatch)
 
     archive = doc.generate_archive(tmp_path / "article", format=format)
 
@@ -544,6 +568,7 @@ def test_generate_archive(tmp_path: pathlib.Path, format: str, suffix: str):
 
     assert set(names) == {
         "article.tex",
+        "article.bbl",
         "aastex701.cls",
         "aasjournalv7.bst",
         "orcid-ID.png",
@@ -551,23 +576,17 @@ def test_generate_archive(tmp_path: pathlib.Path, format: str, suffix: str):
     }
 
 
-def test_generate_archive_bibliography(tmp_path: pathlib.Path):
-    """A document with a bibliography must ship the .bbl the AAS requires."""
+def test_generate_archive_bibliography(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A document with a bibliography ships the .bib alongside the .bbl."""
     sources = tmp_path / "sources.bib"
-    sources.write_text(
-        "@ARTICLE{Doe2020,\n"
-        "  author = {{Doe}, Jane},\n"
-        '  title = "{An interesting result}",\n'
-        "  journal = {\\apj},\n"
-        "  year = 2020,\n"
-        "  volume = {1},\n"
-        "  pages = {1},\n"
-        "}\n"
-    )
+    sources.write_text("@ARTICLE{Doe2020}")
 
     doc = _submittable_document()
-    doc.append(pylatex.NoEscape(r"We cite \citet{Doe2020}."))
     doc.append(aastex.Bibliography("sources"))
+    _fake_compiler(monkeypatch)
 
     archive = doc.generate_archive(
         tmp_path / "article",
@@ -581,6 +600,63 @@ def test_generate_archive_bibliography(tmp_path: pathlib.Path):
     assert "sources.bib" in names
 
 
+def test_generate_archive_missing_bbl(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """The .bbl is required for a document which cites anything."""
+    doc = _submittable_document()
+    doc.append(aastex.Bibliography("sources"))
+
+    def compile(self, filepath, **kwargs):
+        pathlib.Path(filepath).with_suffix(".tex").write_text("a compiled document")
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", compile)
+
+    with pytest.raises(FileNotFoundError, match=".bbl"):
+        doc.generate_archive(tmp_path / "article")
+
+
+def test_generate_archive_missing_file(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    doc = _submittable_document()
+    _fake_compiler(monkeypatch)
+
+    with pytest.raises(FileNotFoundError):
+        doc.generate_archive(
+            tmp_path / "article",
+            bibliography=tmp_path / "nonexistent.bib",
+        )
+
+
+def test_generate_archive_unknown_format(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    doc = _submittable_document()
+    _fake_compiler(monkeypatch)
+
+    with pytest.raises(ValueError, match="unrecognized format"):
+        doc.generate_archive(tmp_path / "article", format="rar")
+
+
+def test_generate_archive_default_filepath(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    doc = _submittable_document()
+    _fake_compiler(monkeypatch)
+    monkeypatch.setattr(doc, "default_filepath", str(tmp_path / "article"))
+
+    assert doc.generate_archive() == tmp_path / "article.zip"
+
+
+@pytest.mark.skipif(
+    shutil.which("latexmk") is None,
+    reason="requires a LaTeX installation",
+)
 def test_generate_archive_compiles(tmp_path: pathlib.Path):
     """The unpacked archive must compile on its own, with nothing else around it."""
     doc = _submittable_document()
@@ -600,16 +676,6 @@ def test_generate_archive_compiles(tmp_path: pathlib.Path):
     )
 
     assert (clean / "article.pdf").exists()
-
-
-def test_generate_archive_missing_file(tmp_path: pathlib.Path):
-    doc = _submittable_document()
-
-    with pytest.raises(FileNotFoundError):
-        doc.generate_archive(
-            tmp_path / "article",
-            bibliography=tmp_path / "nonexistent.bib",
-        )
 
 
 def test_document_images_gridline(tmp_path: pathlib.Path):

@@ -801,7 +801,7 @@ class Document(pylatex.Document):
             with tarfile.open(result, "w:gz") as archive:
                 for member in members:
                     archive.add(member, arcname=member.name)
-        else:  # pragma: nocover
+        else:
             raise ValueError(f"unrecognized format {format!r}")
 
         return result
