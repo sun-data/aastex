@@ -1,30 +1,57 @@
 Introduction
 ============
 
-This Python library extends `PyLaTeX <https://github.com/JelteF/PyLaTeX>`_
-to support the `AASTeX LaTeX package <https://journals.aas.org/aastex-package-for-manuscript-preparation/>`_.
+:mod:`aastex` lets you write an article for the journals of the American
+Astronomical Society as a Python program.
+It extends `PyLaTeX <https://github.com/JelteF/PyLaTeX>`_ with the pieces of the
+`AASTeX LaTeX package <https://journals.aas.org/aastex-package-for-manuscript-preparation/>`_
+that a manuscript needs: titles, authors and their affiliations, acronyms,
+sections, figures, and bibliographies.
 
-Please see the `PyLaTeX documentation <https://jeltef.github.io/PyLaTeX/current/>`_
-for more information on how to use this package.
+In an ordinary manuscript, the numbers quoted in the prose and the figures
+printed beside them are copied out of an analysis by hand, and they begin to
+drift from that analysis as soon as it changes.
+Writing the article as a program removes the copying step.
+Figures are drawn by the same code that produced the result, and quantities are
+declared as LaTeX macros computed from Python values, so the text cannot
+disagree with the analysis behind it.
+
+Since :mod:`aastex` is built on PyLaTeX, anything that library can express is
+available here as well;
+see the `PyLaTeX documentation <https://jeltef.github.io/PyLaTeX/current/>`_
+for the underlying model of documents, environments, and commands.
 
 |
 
-API Reference
-=============
+Installation
+============
 
-.. autosummary::
-    :toctree: _autosummary
-    :template: module_custom.rst
-    :recursive:
+:mod:`aastex` is available on PyPI and can be installed using pip:
 
-    aastex
+.. code-block:: bash
+
+    pip install aastex
+
+Compiling an article also requires a LaTeX installation providing the
+dependencies of the AASTeX class.
+On Debian and Ubuntu:
+
+.. code-block:: bash
+
+    sudo apt-get install texlive-publishers texlive-science cm-super latexmk
 
 |
 
-Example
-=======
+Writing an article
+==================
 
-Here is a simple example showing some of the basic features of :mod:`aastex`.
+The example below builds a small but complete article, one piece at a time.
+Each step appends to the same :class:`aastex.Document`, which is compiled at the
+end.
+
+Start by configuring :mod:`matplotlib` to render text with LaTeX, so that the
+figures use the same fonts as the surrounding article, and create the document.
+:class:`aastex.Document` defaults to the AASTeX class in its two column style.
 
 .. jupyter-execute::
 
@@ -35,21 +62,22 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     import astropy.constants
     import aastex
 
-    # Modify matplotlib defaults to use Latex backend
-    # with correct font family and size
     plt.rcParams['text.usetex'] = True
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.size'] = 9
     plt.rcParams['lines.linewidth'] = 1
 
-    # Define an object representing the Latex document
     doc = aastex.Document()
 
-    # Define the title of the article
+Every article needs a title, and one or more authors.
+An :class:`aastex.Author` carries an :class:`aastex.Affiliation`, and optionally
+an ORCID and an email address, which AASTeX prints in the front matter.
+
+.. jupyter-execute::
+
     title = aastex.Title("An Interesting Article")
     doc.append(title)
 
-    # Define the author of the paper and their affiliated organization
     msu = aastex.Affiliation(
         'Montana State University, Department of Physics, '
         'P.O. Box 173840, Bozeman, MT 59717, USA'
@@ -62,18 +90,37 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     )
     doc.append(author)
 
-    # Define an acronym to be used in the body of the document
+An :class:`aastex.Acronym` is defined once and then used in the prose through a
+macro named after it, ``\NASA`` in this case.
+The first use in the text expands to the full phrase followed by the
+abbreviation, and later uses give the abbreviation alone, so the convention is
+applied for you no matter how the text is later rearranged.
+
+.. jupyter-execute::
+
     nasa = aastex.Acronym("NASA", "National Aeronautics and Space Administration")
     doc.preamble.append(nasa)
 
-    # Define the abstract of the article
+The abstract is a container like any other section of the document, so text is
+appended to it.
+Here the LaTeX ``lipsum`` package provides placeholder prose.
+
+.. jupyter-execute::
+
     abstract = aastex.Abstract()
     abstract.packages.append(aastex.Package("lipsum"))
     abstract.append("Some text summarizing the article. ")
     abstract.append(r"\lipsum[1-1]")
     doc.append(abstract)
 
-    # Define the speed of light as a variable that can be used in the document
+This is the step that keeps the article honest.
+:meth:`aastex.Document.set_variable_quantity` defines a LaTeX macro from an
+:class:`astropy.units.Quantity`, formatting the value and its units, so the
+prose can cite ``\speedOfLight`` instead of a number typed by hand.
+Recompute the value and the article follows.
+
+.. jupyter-execute::
+
     doc.set_variable_quantity(
         name="speedOfLight",
         value=astropy.constants.c.to(u.km / u.s),
@@ -81,7 +128,17 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         digits_after_decimal=4,
     )
 
-    # Define a column-width figure with random data
+Figures are created from :mod:`matplotlib` figures using
+:meth:`aastex.Figure.add_fig`.
+The label given to :class:`aastex.Figure` names both the LaTeX label and the
+image file saved next to the article, and the plot may be closed once it has
+been added, since it is not saved until the document is compiled.
+The constants :data:`aastex.column_width_inches` and
+:data:`aastex.text_width_inches` give the width of a column and of the full page,
+which are the two useful figure widths in a two column article.
+
+.. jupyter-execute::
+
     fig, ax = plt.subplots(
         figsize=(aastex.column_width_inches, 2),
         constrained_layout=True,
@@ -96,7 +153,16 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
         r"Here is a figure caption. \lipsum[5-5]"
     ))
 
-    # Define the introduction of the article
+Now the body of the article.
+Note how the section and the figure are formatted into the string:
+:class:`aastex.Section` and :class:`aastex.Figure` render as references to
+themselves, so numbering is never written by hand and never goes stale when the
+document is reordered.
+The acronym and the variable defined above are used here as ``\NASA`` and
+``\speedOfLight``.
+
+.. jupyter-execute::
+
     intro = aastex.Section("Introduction")
     intro.packages.append(aastex.Package("lipsum"))
     intro.append(
@@ -112,10 +178,18 @@ Here is a simple example showing some of the basic features of :mod:`aastex`.
     intro.append(r"\lipsum[3-5]")
     doc.append(intro)
 
-    # Add the bibliography from sources.bib
+Finally the bibliography, which reads the BibTeX file ``sources.bib`` sitting
+beside the article, and resolves the citation used above.
+
+.. jupyter-execute::
+
     doc.append(aastex.Bibliography("sources"))
 
-    # Compile the document into a PDF
+:meth:`aastex.Document.generate_pdf` writes the ``.tex`` file, saves each figure
+next to it, copies in the AASTeX class and bibliography style, and runs LaTeX.
+
+.. jupyter-execute::
+
     path_pdf = pathlib.Path("an_interesting_article.pdf")
     doc.generate_pdf(filepath=path_pdf.with_suffix(""))
 
@@ -137,6 +211,40 @@ Which outputs the following PDF:
         url = path_pdf.resolve()
 
     IPython.display.IFrame(url, width=900, height=400)
+
+|
+
+Preparing a submission
+======================
+
+The `AAS submission system <https://journals.aas.org/pre-submission-checklist-for-aas-journal-authors/>`_
+requires every file of a manuscript to sit at the same directory level, since it
+cannot parse subdirectories.
+:meth:`aastex.Document.generate_archive` compiles the article and gathers the
+``.tex`` file, the ``.bbl`` file required by the AAS conversion software, the
+AASTeX class and bibliography style files, and every figure into a flat archive
+which is ready to upload:
+
+.. code-block:: python
+
+    doc.generate_archive(
+        pathlib.Path("an_interesting_article"),
+        bibliography="sources.bib",
+    )
+
+Pass ``format="gztar"`` for a ``.tar.gz`` archive instead of a ``.zip``.
+
+|
+
+API Reference
+=============
+
+.. autosummary::
+    :toctree: _autosummary
+    :template: module_custom.rst
+    :recursive:
+
+    aastex
 
 |
 
