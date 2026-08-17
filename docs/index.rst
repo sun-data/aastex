@@ -246,16 +246,6 @@ API Reference
 
     aastex
 
-These constants describe the geometry of a page of an AASTeX article:
-
-.. autosummary::
-    :toctree: _autosummary
-
-    aastex.text_width_inches
-    aastex.column_width_inches
-    aastex.textwidth
-    aastex.columnwidth
-
 |
 
 Indices and tables
