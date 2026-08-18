@@ -140,11 +140,39 @@ class Author(pylatex.base_classes.LatexObject):
 
 @dataclasses.dataclass
 class Acronym(pylatex.base_classes.LatexObject):
+    r"""
+    An acronym which is expanded on first use and abbreviated thereafter.
+
+    Defining an acronym also defines LaTeX commands for using it:
+    ``\NASA`` expands it on first use and abbreviates it afterwards, and
+    ``\NASACapital`` does the same with the first letter capitalized, for a
+    sentence which begins with the acronym.
+    The capitalized form matters for an instrument whose name reads as
+    ``"the Multi-slit Solar Explorer"``, since a sentence should open with
+    "The" rather than "the".
+    ``\NASAs`` and ``\NASACapitals`` are the plural forms, and ``\NASAShort``
+    is the abbreviation whether or not it has been used before.
+    """
+
     acronym: str
+    """The abbreviated form of this acronym."""
+
     name_full: str
+    """
+    The expanded form of this acronym.
+
+    Include a leading article, as in ``"the Multi-slit Solar Explorer"``,
+    for a name which needs one.
+    """
+
     name_short: None | str = None
+    """The abbreviation to display, if it differs from :attr:`acronym`."""
+
     plural: bool = False
+    """Whether to define the plural forms of this acronym."""
+
     short: bool = False
+    """Whether to define a command which always gives the abbreviation."""
 
     def __post_init__(self):
         self.packages.append(pylatex.Package("acronym"))
@@ -185,6 +213,21 @@ class Acronym(pylatex.base_classes.LatexObject):
                 arguments=[
                     pylatex.NoEscape(rf"\{self.acronym}Short"),
                     pylatex.NoEscape(rf"\acs{{{self.acronym}}}"),
+                ],
+            ).dumps()
+        command += pylatex.Command(
+            command="newcommand",
+            arguments=[
+                pylatex.NoEscape(rf"\{self.acronym}Capital"),
+                pylatex.NoEscape(rf"\Ac{{{self.acronym}}}"),
+            ],
+        ).dumps()
+        if self.plural:
+            command += pylatex.Command(
+                command="newcommand",
+                arguments=[
+                    pylatex.NoEscape(rf"\{self.acronym}Capitals"),
+                    pylatex.NoEscape(rf"\Acp{{{self.acronym}}}"),
                 ],
             ).dumps()
         return command
