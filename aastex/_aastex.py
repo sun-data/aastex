@@ -71,8 +71,14 @@ class Author(pylatex.base_classes.LatexObject):
     name: str
     """Name of the author"""
 
-    affiliation: Affiliation
-    """The organization affiliated with the author"""
+    affiliation: Affiliation | list[Affiliation]
+    """
+    The organization affiliated with the author.
+
+    A list may be given for an author with more than one affiliation, such as
+    someone who has moved since the work was done, in which case the
+    organization where the work was done is usually given first.
+    """
 
     email: None | str = None
     """
@@ -115,11 +121,21 @@ class Author(pylatex.base_classes.LatexObject):
             options=show,
         ).dumps()
 
-        affilation = self.affiliation.dumps()
+        affiliation = "\n".join(a.dumps() for a in self.affiliations)
 
-        result += f"{author}\n{email}\n{affilation}"
+        result += f"{author}\n{email}\n{affiliation}"
 
         return result
+
+    @property
+    def affiliations(self) -> list[Affiliation]:
+        """
+        The organizations affiliated with the author, as a list, whether one
+        or several were given.
+        """
+        if isinstance(self.affiliation, Affiliation):
+            return [self.affiliation]
+        return list(self.affiliation)
 
 
 @dataclasses.dataclass
