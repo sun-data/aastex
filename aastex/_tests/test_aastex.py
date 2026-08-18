@@ -144,6 +144,52 @@ class TestAcronym:
     def test_dumps(self, a: aastex.Title):
         assert isinstance(a.dumps(), str)
 
+    def test_capital(self, a: aastex.Acronym):
+        """A capitalized command is defined for a sentence starting with the acronym."""
+        dumps = a.dumps()
+        assert rf"\{a.acronym}Capital" in dumps
+        assert rf"\Ac{{{a.acronym}}}" in dumps
+        if a.plural:
+            assert rf"\{a.acronym}Capitals" in dumps
+            assert rf"\Acp{{{a.acronym}}}" in dumps
+
+
+@pytest.mark.skipif(
+    shutil.which("latexmk") is None,
+    reason="requires a LaTeX installation",
+)
+def test_acronym_capital_compiles(tmp_path: pathlib.Path):
+    """
+    The capitalized command raises the article of a name which carries one.
+
+    An instrument named "the Multi-slit Solar Explorer" should open a sentence
+    with "The", which is what the underlying `acronym` package provides.
+    """
+    doc = aastex.Document(document_options="twocolumn", linenumbers=False)
+    doc.preamble.append(aastex.Acronym("MUSE", "the Multi-slit Solar Explorer"))
+    doc.append(aastex.Title("Acronyms"))
+    doc += [
+        aastex.Author(
+            name="Jane Doe",
+            affiliation=aastex.Affiliation("Fancy University"),
+        )
+    ]
+    section = aastex.Section("Introduction")
+    section.append(pylatex.NoEscape(r"\MUSECapital\ observes the Sun. \MUSE\ again."))
+    doc.append(section)
+
+    path = tmp_path / "acronyms"
+    doc.generate_pdf(path, clean_tex=False)
+
+    text = subprocess.run(
+        args=["pdftotext", str(path.with_suffix(".pdf")), "-"],
+        capture_output=True,
+        text=True,
+    ).stdout
+
+    assert "The Multi-slit Solar Explorer (MUSE)" in text
+    assert "MUSE again" in text
+
 
 @pytest.mark.parametrize(
     argnames="a",
