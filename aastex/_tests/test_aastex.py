@@ -398,6 +398,32 @@ class TestGridline:
     pass
 
 
+def test_document_linenumbers_default():
+    """The AAS journals require line numbers for review."""
+    assert "linenumbers" in aastex.Document().dumps()
+
+
+def test_document_linenumbers_disabled():
+    assert "linenumbers" not in aastex.Document(linenumbers=False).dumps()
+
+
+@pytest.mark.parametrize(
+    argnames="document_options",
+    argvalues=[
+        "twocolumn",
+        ["twocolumn"],
+        ["twocolumn", "linenumbers"],
+    ],
+)
+def test_document_linenumbers_options(document_options: str | list[str]):
+    """Line numbers are added to the given options without disturbing them."""
+    dumps = aastex.Document(document_options=document_options).dumps()
+    options = dumps.split("{aastex701}")[0]
+
+    assert options.count("linenumbers") == 1
+    assert "twocolumn" in options
+
+
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
