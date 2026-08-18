@@ -571,6 +571,19 @@ class Gridline(pylatex.base_classes.CommandBase):
 
 
 class Document(pylatex.Document):
+    """
+    An article using the AASTeX class.
+
+    Parameters
+    ----------
+    linenumbers
+        Whether to number the lines of the article.
+        The AAS journals `require line numbers
+        <https://journals.aas.org/pre-submission-checklist-for-aas-journal-authors/>`_
+        for review, so they are on by default, and can be turned off for a
+        version meant to be read rather than reviewed.
+    """
+
     def __init__(
         self,
         default_filepath: str | pathlib.Path = "default_filepath",
@@ -586,9 +599,18 @@ class Document(pylatex.Document):
         indent: None | bool = None,
         geometry_options: None | dict = None,
         data: None | list = None,
+        linenumbers: bool = True,
     ):
         if document_options is None:
             document_options = ["twocolumn"]
+        elif isinstance(document_options, str):
+            document_options = [document_options]
+        else:
+            document_options = list(document_options)
+
+        if linenumbers and "linenumbers" not in document_options:
+            document_options.append("linenumbers")
+
         super().__init__(
             default_filepath=str(default_filepath),
             documentclass=documentclass,
