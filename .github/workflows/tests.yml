@@ -22,8 +22,14 @@ jobs:
     name: ${{ matrix.os }}, Python ${{ matrix.python-version }} install and test
     steps:
       - uses: actions/checkout@v4
+      # Only one job needs LaTeX. `test_generate_archive_compiles` is the only
+      # test which compiles anything, every other test stands in for the
+      # compiler, and that test skips itself when `latexmk` is absent, which is
+      # how the Windows and macOS jobs already pass. Installing TeX Live takes
+      # several minutes and occasionally far longer, so the other jobs skip it
+      # and let coverage come from this one.
       - name: Install LaTeX
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.python-version == '3.13'
         # `apt-get` waits forever if another process on the runner holds the
         # dpkg lock, so bound that wait and answer its prompts non-interactively.
         run: >-
