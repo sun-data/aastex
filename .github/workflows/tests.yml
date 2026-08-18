@@ -24,7 +24,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install LaTeX
         if: runner.os == 'Linux'
-        run: sudo apt-get install texlive-publishers texlive-science cm-super latexmk
+        # `apt-get` waits forever if another process on the runner holds the
+        # dpkg lock, so bound that wait and answer its prompts non-interactively.
+        run: >-
+          sudo apt-get install -y -o DPkg::Lock::Timeout=300
+          texlive-publishers texlive-science cm-super latexmk
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
