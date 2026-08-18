@@ -58,6 +58,13 @@ class TestAffiliation:
             name="John Doe",
             affiliation=aastex.Affiliation("Fancy University"),
         ),
+        aastex.Author(
+            name="Jane Roe",
+            affiliation=[
+                aastex.Affiliation("Fancy University"),
+                aastex.Affiliation("Another Fancy University"),
+            ],
+        ),
     ],
 )
 class TestAuthor:
@@ -65,7 +72,21 @@ class TestAuthor:
         assert isinstance(a.name, str)
 
     def test_affiliation(self, a: aastex.Author):
-        assert isinstance(a.affiliation, aastex.Affiliation)
+        result = a.affiliation
+        if not isinstance(result, aastex.Affiliation):
+            assert all(isinstance(r, aastex.Affiliation) for r in result)
+
+    def test_affiliations(self, a: aastex.Author):
+        result = a.affiliations
+        assert isinstance(result, list)
+        assert result
+        assert all(isinstance(r, aastex.Affiliation) for r in result)
+
+        # every affiliation given is rendered
+        dumps = a.dumps()
+        assert dumps.count(r"\affiliation") == len(result)
+        for affiliation in result:
+            assert affiliation.name in dumps
 
     def test_orcid(self, a: aastex.Author):
         result = a.orcid
