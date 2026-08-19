@@ -65,6 +65,11 @@ class TestAffiliation:
                 aastex.Affiliation("Another Fancy University"),
             ],
         ),
+        aastex.Author(
+            name="John Roe",
+            affiliation=aastex.Affiliation("Fancy University"),
+            altaffiliation="Deceased",
+        ),
     ],
 )
 class TestAuthor:
@@ -87,6 +92,20 @@ class TestAuthor:
         assert dumps.count(r"\affiliation") == len(result)
         for affiliation in result:
             assert affiliation.name in dumps
+
+    def test_altaffiliation(self, a: aastex.Author):
+        result = a.altaffiliation
+        dumps = a.dumps()
+        if result is not None:
+            assert isinstance(result, str)
+
+            # the footnote symbol attaches to the preceding text, so this has
+            # to follow `\author` and nothing else
+            author = dumps.index(r"\author")
+            assert dumps.index(r"\altaffiliation") > author
+            assert dumps.index(result, author) < dumps.index(r"\email")
+        else:
+            assert r"\altaffiliation" not in dumps
 
     def test_orcid(self, a: aastex.Author):
         result = a.orcid
@@ -675,7 +694,12 @@ def _submittable_document() -> aastex.Document:
         aastex.Author(
             name="Jane Doe",
             affiliation=aastex.Affiliation("Fancy University"),
-        )
+        ),
+        aastex.Author(
+            name="John Roe",
+            affiliation=aastex.Affiliation("Fancy University"),
+            altaffiliation="Deceased",
+        ),
     ]
     section = aastex.Section("A section")
     section.append("Some text.")

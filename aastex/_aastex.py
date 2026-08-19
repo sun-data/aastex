@@ -80,6 +80,16 @@ class Author(pylatex.base_classes.LatexObject):
     organization where the work was done is usually given first.
     """
 
+    altaffiliation: None | str = None
+    """
+    A note about the author which is not an organization, rendered as a
+    footnote on their name.
+
+    This is where AASTeX puts anything which needs saying about an author
+    besides where they work, such as ``"Hubble Fellow"``, or ``"Deceased"``
+    for an author who died before the article was published.
+    """
+
     email: None | str = None
     """
     The email address of the author.
@@ -113,6 +123,18 @@ class Author(pylatex.base_classes.LatexObject):
             options=NoEscape(self.orcid) if self.orcid is not None else None,
         ).dumps()
 
+        # The footnote symbol attaches to whatever precedes it, so this has to
+        # follow `\author` immediately.
+        altaffiliation = ""
+        if self.altaffiliation is not None:
+            altaffiliation = (
+                pylatex.Command(
+                    command="altaffiliation",
+                    arguments=self.altaffiliation,
+                ).dumps()
+                + "\n"
+            )
+
         # AASTeX v7 requires an `\email` command for every author,
         # so emit an empty one if no email address was given.
         email = pylatex.Command(
@@ -123,7 +145,7 @@ class Author(pylatex.base_classes.LatexObject):
 
         affiliation = "\n".join(a.dumps() for a in self.affiliations)
 
-        result += f"{author}\n{email}\n{affiliation}"
+        result += f"{author}\n{altaffiliation}{email}\n{affiliation}"
 
         return result
 
