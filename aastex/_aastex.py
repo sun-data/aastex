@@ -23,8 +23,22 @@ from . import _formatting
 __all__ = [
     "Command",
     "Title",
+    "ShortTitle",
+    "ShortAuthors",
     "Affiliation",
     "Author",
+    "UAT",
+    "Keywords",
+    "Software",
+    "Facilities",
+    "Dataset",
+    "Received",
+    "Revised",
+    "Accepted",
+    "Published",
+    "SubmitJournal",
+    "Acknowledgments",
+    "Contribution",
     "Acronym",
     "Variable",
     "Abstract",
@@ -53,6 +67,36 @@ class Title(pylatex.base_classes.LatexObject):
 
     def dumps(self) -> str:
         return pylatex.Command("title", self.name).dumps()
+
+
+@dataclasses.dataclass
+class ShortTitle(pylatex.base_classes.LatexObject):
+    """
+    An abbreviated title for the running head at the top of each page.
+
+    AASTeX falls back to the full :class:`Title` if this is not given, which
+    overflows the running head for all but the shortest titles.
+    """
+
+    name: str
+    """The abbreviated title."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("shorttitle", self.name).dumps()
+
+
+@dataclasses.dataclass
+class ShortAuthors(pylatex.base_classes.LatexObject):
+    """
+    An abbreviated author list for the running head, such as
+    ``"Doe et al."``.
+    """
+
+    name: str
+    """The abbreviated author list."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("shortauthors", self.name).dumps()
 
 
 @dataclasses.dataclass
@@ -160,6 +204,232 @@ class Author(pylatex.base_classes.LatexObject):
         if isinstance(self.affiliation, Affiliation):
             return [self.affiliation]
         return list(self.affiliation)
+
+
+@dataclasses.dataclass
+class UAT(pylatex.base_classes.LatexObject):
+    """
+    A concept from the `Unified Astronomy Thesaurus
+    <https://astrothesaurus.org/>`_.
+
+    The AAS journals ask that keywords be drawn from the thesaurus, and AASTeX
+    renders one as a link to its entry, so the concept number is needed as well
+    as its name.
+    """
+
+    name: str
+    """The name of the concept, such as ``"Solar physics"``."""
+
+    number: int
+    """
+    The number identifying the concept, which is the last part of the URL of
+    its entry in the thesaurus.
+    """
+
+    def dumps(self) -> str:
+        return pylatex.Command(
+            command="uat",
+            arguments=[self.name, str(self.number)],
+        ).dumps()
+
+
+@dataclasses.dataclass
+class Keywords(pylatex.base_classes.LatexObject):
+    """
+    The keywords describing this article.
+
+    Examples
+    --------
+
+    Describe an article using two thesaurus concepts and a free-form keyword::
+
+        import aastex
+
+        keywords = aastex.Keywords([
+            aastex.UAT("Solar physics", 1476),
+            aastex.UAT("Ultraviolet astronomy", 1736),
+            "spectrographs",
+        ])
+    """
+
+    keywords: "list[str | UAT]"
+    """
+    The keywords, given either as a :class:`UAT` concept or as free-form text.
+    """
+
+    def dumps(self) -> str:
+        keywords = ", ".join(
+            k.dumps() if isinstance(k, UAT) else str(k) for k in self.keywords
+        )
+        return pylatex.Command("keywords", NoEscape(keywords)).dumps()
+
+
+@dataclasses.dataclass
+class Software(pylatex.base_classes.LatexObject):
+    """
+    The software used to produce this article.
+
+    The AAS journals ask that software be cited like any other work, so each
+    entry is usually a name followed by a citation.
+    """
+
+    names: list[str]
+    """The software packages, one entry each."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("software", NoEscape(", ".join(self.names))).dumps()
+
+
+@dataclasses.dataclass
+class Facilities(pylatex.base_classes.LatexObject):
+    """
+    The observing facilities which provided the data used in this article.
+
+    The AAS journals keep a `vocabulary of facility keywords
+    <https://journals.aas.org/facility-keywords/>`_, and the entries here
+    should be drawn from it where one applies.
+    """
+
+    names: list[str]
+    """The facilities, one entry each."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("facilities", NoEscape(", ".join(self.names))).dumps()
+
+
+@dataclasses.dataclass
+class Dataset(pylatex.base_classes.LatexObject):
+    """
+    A dataset used by this article, identified by its DOI.
+
+    AASTeX renders this as a link, so the DOI is what makes the data citable
+    rather than merely mentioned.
+    """
+
+    doi: str
+    """The DOI of the dataset, without the ``https://doi.org/`` prefix."""
+
+    name: None | str = None
+    """
+    The text to display.  The DOI itself is displayed if this is not given.
+    """
+
+    def dumps(self) -> str:
+        return pylatex.Command(
+            command="dataset",
+            options=NoEscape(self.doi),
+            arguments=self.doi if self.name is None else self.name,
+        ).dumps()
+
+
+@dataclasses.dataclass
+class Received(pylatex.base_classes.LatexObject):
+    """The date on which the journal received this article."""
+
+    date: str
+    """The date, as it should be printed."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("received", self.date).dumps()
+
+
+@dataclasses.dataclass
+class Revised(pylatex.base_classes.LatexObject):
+    """The date on which the journal received the revision of this article."""
+
+    date: str
+    """The date, as it should be printed."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("revised", self.date).dumps()
+
+
+@dataclasses.dataclass
+class Accepted(pylatex.base_classes.LatexObject):
+    """The date on which the journal accepted this article."""
+
+    date: str
+    """The date, as it should be printed."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("accepted", self.date).dumps()
+
+
+@dataclasses.dataclass
+class Published(pylatex.base_classes.LatexObject):
+    """The date on which the journal published this article."""
+
+    date: str
+    """The date, as it should be printed."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("published", self.date).dumps()
+
+
+@dataclasses.dataclass
+class SubmitJournal(pylatex.base_classes.LatexObject):
+    """
+    The AAS journal this article is being submitted to, which is printed on
+    the title page of a manuscript.
+    """
+
+    name: str
+    """The name of the journal, such as ``"ApJ"``."""
+
+    def dumps(self) -> str:
+        return pylatex.Command("submitjournal", self.name).dumps()
+
+
+class Acknowledgments(pylatex.base_classes.Environment):
+    """
+    The acknowledgments of this article.
+
+    AASTeX hides this section when the ``anonymous`` class option is set for
+    dual-anonymous review, so it is the right place for anything which would
+    identify the authors.
+    """
+
+    def __init__(
+        self,
+        *,
+        options: None | str | list[str] = None,
+        arguments: None | str | list[str] = None,
+        start_arguments: None | str | list[str] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            options=options,
+            arguments=arguments,
+            start_arguments=start_arguments,
+            **kwargs,
+        )
+        self.escape = False
+
+
+class Contribution(pylatex.base_classes.Environment):
+    """
+    A statement of what each author contributed to this article.
+
+    Added in AASTeX v7, and free-form text rather than a fixed taxonomy.
+    Like :class:`Acknowledgments`, AASTeX hides it under the ``anonymous``
+    class option.
+    """
+
+    def __init__(
+        self,
+        *,
+        options: None | str | list[str] = None,
+        arguments: None | str | list[str] = None,
+        start_arguments: None | str | list[str] = None,
+        **kwargs,
+    ):
+        super().__init__(
+            options=options,
+            arguments=arguments,
+            start_arguments=start_arguments,
+            **kwargs,
+        )
+        self.escape = False
 
 
 @dataclasses.dataclass

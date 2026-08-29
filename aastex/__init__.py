@@ -5,7 +5,9 @@ This package extends `PyLaTeX <https://github.com/JelteF/PyLaTeX>`_ with the
 pieces of the `AASTeX <https://journals.aas.org/aastex-package-for-manuscript-preparation/>`_
 class used by the journals of the American Astronomical Society: titles,
 authors and their affiliations, acronyms, sections, figures, and
-bibliographies.
+bibliographies, along with the front matter the journals ask for, such as
+keywords drawn from the Unified Astronomy Thesaurus, the software and
+facilities used, the datasets cited, and statements of author contributions.
 
 The article is built by assembling a :class:`Document` from these objects and
 calling :meth:`Document.generate_pdf`, which writes the ``.tex`` file, saves

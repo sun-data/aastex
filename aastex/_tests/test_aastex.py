@@ -281,6 +281,150 @@ class TestAbstract:
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.ShortTitle("A short title"),
+        aastex.ShortAuthors("Doe et al."),
+        aastex.SubmitJournal("ApJ"),
+    ],
+)
+class TestRunningHead:
+    def test_name(self, a: aastex.ShortTitle | aastex.ShortAuthors):
+        assert isinstance(a.name, str)
+
+    def test_dumps(self, a: aastex.ShortTitle | aastex.ShortAuthors):
+        assert isinstance(a.dumps(), str)
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Received("2026 January 1"),
+        aastex.Revised("2026 February 1"),
+        aastex.Accepted("2026 March 1"),
+        aastex.Published("2026 April 1"),
+    ],
+)
+class TestDate:
+    def test_date(self, a: aastex.Received):
+        assert isinstance(a.date, str)
+
+    def test_dumps(self, a: aastex.Received):
+        assert isinstance(a.dumps(), str)
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.UAT("Solar physics", 1476),
+    ],
+)
+class TestUAT:
+    def test_number(self, a: aastex.UAT):
+        assert isinstance(a.number, int)
+
+    def test_dumps(self, a: aastex.UAT):
+        result = a.dumps()
+        assert a.name in result
+        assert str(a.number) in result
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Keywords(["spectrographs"]),
+        aastex.Keywords([aastex.UAT("Solar physics", 1476), "spectrographs"]),
+    ],
+)
+class TestKeywords:
+    def test_dumps(self, a: aastex.Keywords):
+        result = a.dumps()
+        assert r"\keywords" in result
+        assert "spectrographs" in result
+
+    def test_dumps_uat(self, a: aastex.Keywords):
+        """A thesaurus concept is expanded rather than printed as a repr."""
+        if any(isinstance(k, aastex.UAT) for k in a.keywords):
+            assert r"\uat" in a.dumps()
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Software(["numpy", "astropy"]),
+        aastex.Facilities(["IRIS", "SDO(AIA)"]),
+    ],
+)
+class TestNameList:
+    def test_dumps(self, a: aastex.Software | aastex.Facilities):
+        result = a.dumps()
+        for name in a.names:
+            assert name in result
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Dataset("10.5281/zenodo.1234"),
+        aastex.Dataset("10.5281/zenodo.1234", name="ESIS Level 1"),
+    ],
+)
+class TestDataset:
+    def test_dumps(self, a: aastex.Dataset):
+        result = a.dumps()
+        assert r"\dataset" in result
+        assert a.doi in result
+
+    def test_dumps_name(self, a: aastex.Dataset):
+        """The DOI stands in for the text when no text is given."""
+        if a.name is not None:
+            assert a.name in a.dumps()
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Acknowledgments(),
+        aastex.Contribution(),
+    ],
+)
+class TestFrontMatterEnvironment:
+    def test_dumps(self, a: aastex.Acknowledgments | aastex.Contribution):
+        a.append("Some text.")
+        result = a.dumps()
+        assert "Some text." in result
+
+
+def test_metadata_in_document():
+    """Every metadata object reaches the document it is appended to."""
+    doc = aastex.Document()
+    doc.append(aastex.Title("An interesting article"))
+    doc += [
+        aastex.ShortTitle("Interesting"),
+        aastex.ShortAuthors("Doe et al."),
+        aastex.Keywords([aastex.UAT("Solar physics", 1476)]),
+        aastex.Software(["astropy"]),
+        aastex.Facilities(["IRIS"]),
+        aastex.Dataset("10.5281/zenodo.1234"),
+        aastex.SubmitJournal("ApJ"),
+    ]
+
+    result = doc.dumps()
+
+    for command in (
+        r"\shorttitle",
+        r"\shortauthors",
+        r"\keywords",
+        r"\uat",
+        r"\software",
+        r"\facilities",
+        r"\dataset",
+        r"\submitjournal",
+    ):
+        assert command in result
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Section("Introduction"),
     ],
 )
