@@ -215,6 +215,11 @@ def test_acronym_capital_compiles(tmp_path: pathlib.Path):
     argvalues=[
         aastex.Variable("foo", 2),
         aastex.Variable("bar", 3 * u.AA),
+        aastex.Variable(
+            name="baz",
+            value=17.5 * u.km / u.s / u.pix,
+            unit=(u.km, u.s**-1, u.pix**-1),
+        ),
     ],
 )
 class TestVariable:
@@ -227,6 +232,40 @@ class TestVariable:
 
     def test_dumps(self, a: aastex.Variable):
         assert isinstance(a.dumps(), str)
+
+
+def test_variable_unit():
+    """The factors of a unit are set in the order they were given."""
+    value = 17.5 * u.km / u.s / u.pix
+
+    # the order astropy chooses, which is not the one this is read in
+    assert r"\mathrm{km\,pix^{-1}\,s^{-1}}" in aastex.Variable("a", value).dumps()
+
+    result = aastex.Variable("a", value, unit=(u.km, u.s**-1, u.pix**-1)).dumps()
+    assert r"\mathrm{km\,s^{-1}\,pix^{-1}}" in result
+
+    # the number is left as astropy wrote it
+    assert "17.5" in result
+
+
+def test_variable_unit_converts():
+    """A value is converted to the unit it is to be set in."""
+    result = aastex.Variable("a", 1500 * u.m, unit=(u.km,)).dumps()
+    assert r"\mathrm{km}" in result
+    assert "1.5" in result
+
+
+def test_variable_unit_scientific_notation():
+    """Replacing the unit leaves an exponent alone."""
+    result = aastex.Variable("a", 1.2e-5 * u.cm**2, unit=(u.cm**2,)).dumps()
+    assert r"\times 10^{-5}" in result
+    assert r"\mathrm{cm^{2}}" in result
+
+
+def test_variable_unit_mismatch():
+    """A unit the value cannot be expressed in raises."""
+    with pytest.raises(u.UnitConversionError):
+        aastex.Variable("a", 3 * u.m, unit=(u.s,)).dumps()
 
 
 @pytest.mark.parametrize(

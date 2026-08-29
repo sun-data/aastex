@@ -1,5 +1,7 @@
-import collections
+import collections.abc
 import dataclasses
+import functools
+import operator
 import pathlib
 import shutil
 import tarfile
@@ -267,16 +269,46 @@ class Variable(pylatex.base_classes.LatexObject):
     value: float | u.Quantity
     """The value of the variable."""
 
+    unit: "None | collections.abc.Sequence[u.UnitBase]" = None
+    """
+    The unit to express :attr:`value` in, written as its factors in the
+    order they should be read.
+
+    ``astropy`` prints the bases of a composite unit in an order of its own,
+    so a Doppler dispersion comes out as :math:`\\mathrm{km\\,pix^{-1}\\,s^{-1}}`
+    however it was written. Giving the factors, ``(u.km, u.s**-1, u.pix**-1)``,
+    prints them in that order instead.
+
+    The value is converted to the product of the factors, so a unit it cannot
+    be expressed in raises rather than mislabelling it.
+    """
+
     @property
     def _name(self) -> str:
         return NoEscape(f"\\{self.name}")
 
     @property
+    def _unit(self) -> str:
+        """The factors of :attr:`unit`, set as one unit in the given order."""
+        return r"\,".join(
+            # each factor is set on its own, and the wrapper each comes in is
+            # removed so that the whole product can share one
+            f"{factor:latex_inline}"[1:~0].removeprefix(r"\mathrm{").removesuffix("}")
+            for factor in self.unit
+        )
+
+    @property
     def _value(self) -> str:
         v = self.value
         if isinstance(v, u.Quantity):
-            v = f"{v:latex_inline}"
-            v = rf"\ensuremath{{{v[1:~0]}}}"
+            if self.unit is not None:
+                v = v.to(functools.reduce(operator.mul, self.unit))
+            v = f"{v:latex_inline}"[1:~0]
+            if self.unit is not None:
+                # the unit is the last thing set, so replacing it leaves the
+                # number as astropy wrote it, scientific notation and all
+                v = v[: v.rindex(r"\mathrm{")] + rf"\mathrm{{{self._unit}}}"
+            v = rf"\ensuremath{{{v}}}"
         else:
             v = str(v)
         return NoEscape(v)
