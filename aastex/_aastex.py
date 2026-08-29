@@ -45,6 +45,9 @@ __all__ = [
     "Section",
     "Subsection",
     "Subsubsection",
+    "Appendix",
+    "Added",
+    "Explain",
     "FigureStar",
     "Fig",
     "LeftFig",
@@ -644,6 +647,72 @@ class Subsubsection(
 
 
 @dataclasses.dataclass
+class Appendix(pylatex.base_classes.LatexObject):
+    """
+    The start of the appendices.
+
+    This is a switch rather than a container: append it to the document once,
+    and every :class:`Section` after it is an appendix.
+    """
+
+    def dumps(self) -> str:
+        return pylatex.Command("appendix").dumps()
+
+
+@dataclasses.dataclass
+class Added(pylatex.base_classes.LatexObject):
+    """
+    Text added since the previous version of the article.
+
+    This renders only if the document was built with ``trackchanges=True``,
+    so a revision can be marked up once and compiled either for the referee or
+    for the reader.
+
+    Notes
+    -----
+    AASTeX v7 removed the companion ``\\replaced`` and ``\\deleted`` commands,
+    which now raise a LaTeX error telling the author to use this one instead.
+    Describe what was removed or replaced in :class:`Explain`, or in the
+    ``why`` of the text which replaced it.
+    """
+
+    text: str
+    """The text which was added."""
+
+    why: None | str = None
+    """An optional note about the change, printed before the text."""
+
+    def dumps(self) -> str:
+        return pylatex.Command(
+            command="added",
+            options=self.why,
+            arguments=self.text,
+        ).dumps()
+
+
+@dataclasses.dataclass
+class Explain(pylatex.base_classes.LatexObject):
+    """
+    A note to the referee explaining a change, which prints beside it.
+
+    Like :class:`Added`, this renders only under ``trackchanges=True``.
+    """
+
+    text: str
+    """The explanation."""
+
+    label: None | str = None
+    """An optional label for the change being explained."""
+
+    def dumps(self) -> str:
+        return pylatex.Command(
+            command="explain",
+            options=self.label,
+            arguments=self.text,
+        ).dumps()
+
+
+@dataclasses.dataclass
 class Image:
     """
     An image file which needs to live in the build directory next to the
@@ -965,6 +1034,17 @@ class Document(pylatex.Document):
         <https://journals.aas.org/pre-submission-checklist-for-aas-journal-authors/>`_
         for review, so they are on by default, and can be turned off for a
         version meant to be read rather than reviewed.
+    anonymous
+        Whether to hide everything which identifies the authors.
+        The AAS journals review most initial submissions `dual-anonymously
+        <https://journals.aas.org/dual-anonymous-peer-review/>`_, which AASTeX
+        supports by suppressing the authors, their affiliations, the
+        :class:`Acknowledgments`, and the :class:`Contribution`.
+    trackchanges
+        Whether to mark up the changes made since the previous version, which
+        is what makes :class:`Added` and :class:`Explain` render.
+        Without it they leave no trace, so a revision can be written once and
+        compiled either way.
     """
 
     def __init__(
@@ -983,6 +1063,8 @@ class Document(pylatex.Document):
         geometry_options: None | dict = None,
         data: None | list = None,
         linenumbers: bool = True,
+        anonymous: bool = False,
+        trackchanges: bool = False,
     ):
         if document_options is None:
             document_options = ["twocolumn"]
@@ -991,8 +1073,14 @@ class Document(pylatex.Document):
         else:
             document_options = list(document_options)
 
-        if linenumbers and "linenumbers" not in document_options:
-            document_options.append("linenumbers")
+        requested = dict(
+            linenumbers=linenumbers,
+            anonymous=anonymous,
+            trackchanges=trackchanges,
+        )
+        for option, enabled in requested.items():
+            if enabled and option not in document_options:
+                document_options.append(option)
 
         super().__init__(
             default_filepath=str(default_filepath),

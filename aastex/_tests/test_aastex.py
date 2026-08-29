@@ -425,6 +425,94 @@ def test_metadata_in_document():
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
+        aastex.Appendix(),
+    ],
+)
+class TestAppendix:
+    def test_dumps(self, a: aastex.Appendix):
+        assert a.dumps() == r"\appendix"
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Added("some new text"),
+        aastex.Added("some new text", why="referee 1"),
+    ],
+)
+class TestAdded:
+    def test_dumps(self, a: aastex.Added):
+        result = a.dumps()
+        assert r"\added" in result
+        assert a.text in result
+
+    def test_dumps_why(self, a: aastex.Added):
+        """The note about the change is optional."""
+        if a.why is not None:
+            assert f"[{a.why}]" in a.dumps()
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
+        aastex.Explain("rewrote the introduction"),
+        aastex.Explain("rewrote the introduction", label="sec:intro"),
+    ],
+)
+class TestExplain:
+    def test_dumps(self, a: aastex.Explain):
+        result = a.dumps()
+        assert r"\explain" in result
+        assert a.text in result
+
+    def test_dumps_label(self, a: aastex.Explain):
+        """The label is optional."""
+        if a.label is not None:
+            assert f"[{a.label}]" in a.dumps()
+
+
+@pytest.mark.parametrize(
+    argnames="kwargs,expected,unexpected",
+    argvalues=[
+        (dict(), ["linenumbers"], ["anonymous", "trackchanges"]),
+        (dict(linenumbers=False), [], ["linenumbers"]),
+        (dict(anonymous=True), ["anonymous"], ["trackchanges"]),
+        (dict(trackchanges=True), ["trackchanges"], ["anonymous"]),
+        (dict(anonymous=True, trackchanges=True), ["anonymous", "trackchanges"], []),
+    ],
+)
+def test_document_options(
+    kwargs: dict,
+    expected: list[str],
+    unexpected: list[str],
+):
+    """Each option reaches `\\documentclass`, and none appears uninvited."""
+    doc = aastex.Document(**kwargs)
+
+    (documentclass,) = [
+        line for line in doc.dumps().splitlines() if "documentclass" in line
+    ]
+
+    for option in expected:
+        assert option in documentclass
+    for option in unexpected:
+        assert option not in documentclass
+
+
+def test_document_options_not_duplicated():
+    """Naming an option twice does not repeat it."""
+    doc = aastex.Document(document_options=["twocolumn", "anonymous"], anonymous=True)
+
+    (documentclass,) = [
+        line for line in doc.dumps().splitlines() if "documentclass" in line
+    ]
+
+    assert documentclass.count("anonymous") == 1
+
+
+@pytest.mark.parametrize(
+    argnames="a",
+    argvalues=[
         aastex.Section("Introduction"),
     ],
 )
