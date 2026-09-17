@@ -1028,6 +1028,23 @@ class Document(pylatex.Document):
 
     Parameters
     ----------
+    documentclass
+        The LaTeX class to use.
+        Another journal's class can be given here, along with its
+        ``class_files`` and ``bibliographystyle``, to build an article for
+        that journal with the rest of this package.
+    class_files
+        The files which the class needs alongside the ``.tex`` file, such as
+        the ``.cls`` and ``.bst`` files.
+        They are copied into the build directory by :meth:`generate_pdf` and
+        included in the archive made by :meth:`generate_archive`.
+        A bare name refers to a file distributed with this package, and a path
+        refers to a file of your own.
+        If :obj:`None`, the AASTeX class, the AAS bibliography style, and the
+        ORCID logo are used.
+    bibliographystyle
+        The BibTeX style to declare in the preamble, or :obj:`None` to declare
+        none.
     linenumbers
         Whether to number the lines of the article.
         The AAS journals `require line numbers
@@ -1051,6 +1068,8 @@ class Document(pylatex.Document):
         self,
         default_filepath: str | pathlib.Path = "default_filepath",
         documentclass: str = "aastex701",
+        class_files: "None | collections.abc.Sequence[str | pathlib.Path]" = None,
+        bibliographystyle: None | str = "aasjournalv7",
         document_options: None | str | list[str] = None,
         fontenc: str = "T1",
         inputenc: str = "utf8",
@@ -1098,7 +1117,24 @@ class Document(pylatex.Document):
             data=data,
         )
         self.escape = False
-        self.preamble.append(pylatex.Command("bibliographystyle", "aasjournalv7"))
+
+        if class_files is None:
+            class_files = ("aastex701.cls", "aasjournalv7.bst", "orcid-ID.png")
+        base = pathlib.Path(__file__).parent
+        self.class_files = [
+            (
+                base / f
+                if isinstance(f, str) and pathlib.Path(f).name == f
+                else pathlib.Path(f)
+            )
+            for f in class_files
+        ]
+        """The files copied alongside the ``.tex`` file when building."""
+
+        if bibliographystyle is not None:
+            self.preamble.append(
+                pylatex.Command("bibliographystyle", bibliographystyle)
+            )
 
     def set_variable_quantity(
         self,
@@ -1191,14 +1227,13 @@ class Document(pylatex.Document):
         directory = filepath.parent
         directory.mkdir(parents=True, exist_ok=True)
 
-        base = pathlib.Path(__file__).parent
-
         copies = []
-        for name in ("aastex701.cls", "aasjournalv7.bst", "orcid-ID.png"):
-            destination = directory / name
+        for source in self.class_files:
+            source = pathlib.Path(source)
+            destination = directory / source.name
             if destination.exists():
                 continue
-            shutil.copyfile(base / name, destination)
+            shutil.copyfile(source, destination)
             copies.append(destination)
 
         seen = {}
@@ -1273,12 +1308,8 @@ class Document(pylatex.Document):
 
         directory = filepath.parent
 
-        members = [
-            filepath.with_suffix(".tex"),
-            directory / "aastex701.cls",
-            directory / "aasjournalv7.bst",
-            directory / "orcid-ID.png",
-        ]
+        members = [filepath.with_suffix(".tex")]
+        members += [directory / pathlib.Path(f).name for f in self.class_files]
 
         members += [directory / image.name for image in self.images]
 

@@ -1161,3 +1161,79 @@ def test_document_images_gridline(tmp_path: pathlib.Path):
 )
 class TestBibliography:
     pass
+
+
+def test_document_class_files_default():
+    """By default the AASTeX class, the AAS style, and the ORCID logo are used."""
+    doc = aastex.Document()
+
+    assert [f.name for f in doc.class_files] == [
+        "aastex701.cls",
+        "aasjournalv7.bst",
+        "orcid-ID.png",
+    ]
+    assert all(f.exists() for f in doc.class_files)
+    assert r"\bibliographystyle{aasjournalv7}" in doc.dumps()
+
+
+def test_document_other_class(tmp_path: pathlib.Path):
+    """Another class, its files, and its bibliography style can be given."""
+    cls = tmp_path / "other.cls"
+    cls.write_text("")
+
+    doc = aastex.Document(
+        documentclass="other",
+        class_files=[cls, "orcid-ID.png"],
+        bibliographystyle="plain",
+        document_options=[],
+        linenumbers=False,
+    )
+
+    assert doc.class_files == [cls, doc.class_files[1]]
+    assert doc.class_files[1].name == "orcid-ID.png"
+    assert r"\documentclass{other}" in doc.dumps()
+    assert r"\bibliographystyle{plain}" in doc.dumps()
+
+
+def test_document_no_bibliographystyle():
+    """A document may declare no bibliography style at all."""
+    doc = aastex.Document(bibliographystyle=None)
+
+    assert "bibliographystyle" not in doc.dumps()
+
+
+@pytest.mark.skipif(
+    shutil.which("latexmk") is None,
+    reason="requires a LaTeX installation",
+)
+def test_document_other_class_compiles(tmp_path: pathlib.Path):
+    """A class file of your own is copied into the build directory and used."""
+    source = tmp_path / "source"
+    source.mkdir()
+    cls = source / "minimal.cls"
+    cls.write_text(
+        "\\NeedsTeXFormat{LaTeX2e}\n"
+        "\\ProvidesClass{minimal}\n"
+        "\\LoadClass{article}\n"
+    )
+
+    doc = aastex.Document(
+        documentclass="minimal",
+        class_files=[cls],
+        bibliographystyle=None,
+        document_options=[],
+        linenumbers=False,
+    )
+    doc.append(pylatex.NoEscape("A minimal article."))
+
+    build = tmp_path / "build"
+    path = build / "article"
+    doc.generate_pdf(path, clean_tex=False)
+
+    assert path.with_suffix(".pdf").exists()
+    assert (build / "minimal.cls").exists()
+
+    archive = doc.generate_archive(path)
+    with zipfile.ZipFile(archive) as z:
+        assert "minimal.cls" in z.namelist()
+        assert "aastex701.cls" not in z.namelist()
