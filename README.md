@@ -5,6 +5,7 @@
 [![Black](https://github.com/sun-data/aastex/actions/workflows/black.yml/badge.svg)](https://github.com/sun-data/aastex/actions/workflows/black.yml)
 [![Documentation Status](https://readthedocs.org/projects/aastex/badge/?version=latest)](https://aastex.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/aastex.svg)](https://badge.fury.io/py/aastex)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23108302.svg)](https://doi.org/10.5281/zenodo.23108302)
 
 Write AAS journal articles as Python programs.
 
@@ -105,14 +106,23 @@ doc.generate_archive(pathlib.Path("an_interesting_article"), bibliography="sourc
 If you use aastex in your research, please cite it.
 The citation metadata is kept in [`CITATION.cff`](https://github.com/sun-data/aastex/blob/main/CITATION.cff),
 which the "Cite this repository" button on GitHub can export as BibTeX or APA.
+
+Every release of aastex is archived on Zenodo with its own DOI.
+The concept DOI, [10.5281/zenodo.23108302](https://doi.org/10.5281/zenodo.23108302),
+always resolves to the latest version,
+and the Zenodo page lists the DOI of every version.
 Please include the version of aastex that you used,
 which is given by `importlib.metadata.version("aastex")`.
+The BibTeX entry below uses the concept DOI.
+To cite a specific version instead,
+replace `doi` with the DOI of that version.
 
 ```bibtex
 @software{aastex,
   author = {Smart, Roy T.},
   title = {aastex},
   version = {X.Y.Z},
+  doi = {10.5281/zenodo.23108302},
   url = {https://github.com/sun-data/aastex},
 }
 ```
