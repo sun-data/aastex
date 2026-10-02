@@ -236,6 +236,29 @@ Pass ``format="gztar"`` for a ``.tar.gz`` archive instead of a ``.zip``.
 
 |
 
+Citation
+========
+
+If you use :mod:`aastex` in your research, please cite it.
+The citation metadata is kept in
+`CITATION.cff <https://github.com/sun-data/aastex/blob/main/CITATION.cff>`_,
+which the "Cite this repository" button on the
+`GitHub page <https://github.com/sun-data/aastex>`_
+can export as BibTeX or APA.
+Please include the version of :mod:`aastex` that you used,
+which is given by ``importlib.metadata.version("aastex")``.
+
+.. code-block:: bibtex
+
+    @software{aastex,
+      author = {Smart, Roy T.},
+      title = {aastex},
+      version = {X.Y.Z},
+      url = {https://github.com/sun-data/aastex},
+    }
+
+|
+
 API Reference
 =============
 
