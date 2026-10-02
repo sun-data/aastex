@@ -99,3 +99,20 @@ style files, and every figure into a flat archive ready to upload:
 ```python
 doc.generate_archive(pathlib.Path("an_interesting_article"), bibliography="sources.bib")
 ```
+
+## Citation
+
+If you use aastex in your research, please cite it.
+The citation metadata is kept in [`CITATION.cff`](https://github.com/sun-data/aastex/blob/main/CITATION.cff),
+which the "Cite this repository" button on GitHub can export as BibTeX or APA.
+Please include the version of aastex that you used,
+which is given by `importlib.metadata.version("aastex")`.
+
+```bibtex
+@software{aastex,
+  author = {Smart, Roy T.},
+  title = {aastex},
+  version = {X.Y.Z},
+  url = {https://github.com/sun-data/aastex},
+}
+```

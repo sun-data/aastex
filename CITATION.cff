@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use aastex in your research, please cite it using these metadata."
+type: software
+title: aastex
+abstract: >-
+  aastex is a Python library for writing articles for the journals of the
+  American Astronomical Society as Python programs. It extends PyLaTeX with
+  the parts of the AASTeX class that a manuscript needs. Figures are drawn by
+  the code that produced the result, and quantities in the text are LaTeX
+  macros computed from Python values, so an article cannot drift from the
+  analysis behind it.
+authors:
+  - family-names: Smart
+    given-names: Roy T.
+    orcid: "https://orcid.org/0000-0002-9997-5515"
+repository-code: "https://github.com/sun-data/aastex"
+url: "https://aastex.readthedocs.io"
+license: BSD-3-Clause
+keywords:
+  - AASTeX
+  - LaTeX
+  - scientific writing
