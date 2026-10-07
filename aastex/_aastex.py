@@ -3,6 +3,7 @@ import dataclasses
 import functools
 import operator
 import pathlib
+import re
 import shutil
 import tarfile
 import zipfile
@@ -59,6 +60,7 @@ __all__ = [
     "Marker",
     "Label",
     "Image",
+    "Animation",
     "Figure",
     "Bibliography",
 ]
@@ -766,6 +768,79 @@ class Image:
         return self.source == other.source
 
 
+@dataclasses.dataclass
+class Animation:
+    """
+    A movie which accompanies a :class:`Figure`.
+
+    The AAS journals play the movie in the online version of the article, in
+    place of the still frames which the figure shows in the PDF.
+    The figure tags its stills with the AASTeX ``interactive`` environment,
+    which names the movie but plays nothing.
+    Neither the compiled PDF nor the HTML version of the article made by arXiv
+    can play it, so until the article is published the movie can only be
+    watched where its authors have put it.
+    If :attr:`url` is given, the caption of the figure links to it there.
+
+    The movie is copied into the build directory by
+    :meth:`Document.generate_pdf`, beside the PDF, and
+    :meth:`Document.generate_archive` packs it into an archive of its own, as
+    the journals ask.
+
+    Examples
+    --------
+
+    Accompany a figure with a movie, which can be watched online before the
+    article is published:
+
+    .. code-block:: python
+
+        import aastex
+
+        figure = aastex.Figure(
+            label="evolution",
+            animation=aastex.Animation(
+                source="evolution.mp4",
+                url="https://example.org/article/evolution.mp4",
+            ),
+        )
+        figure.add_image("evolution.pdf", width=None)
+        figure.add_caption(
+            "The evolution of the event. "
+            "The animation runs for 30 seconds and shows the whole event."
+        )
+    """
+
+    source: str | pathlib.Path
+    """
+    The movie file.
+
+    The AAS journals ask for an H.264 encoded MPEG-4 file, smaller than 15 MB.
+    """
+
+    url: None | str = None
+    """
+    Where the movie can be watched before the article is published.
+
+    If given, a sentence linking to it is added to the end of the caption.
+    """
+
+    def __post_init__(self):
+        self.source = pathlib.Path(self.source).resolve()
+
+    @property
+    def name(self) -> str:
+        """The name of this movie inside the build directory."""
+        return pathlib.Path(self.source).name
+
+    def write(self, directory: pathlib.Path) -> pathlib.Path:
+        """
+        Copy this movie into ``directory`` and return its new location.
+        """
+        image = Image(name=self.name, source=pathlib.Path(self.source))
+        return image.write(directory)
+
+
 def _descendants(obj: object) -> list:
     """
     Recursively gather ``obj`` and everything it contains.
@@ -800,9 +875,39 @@ def _images(obj: object) -> list[Image]:
     return result
 
 
+def _animated_figures(obj: object) -> "list[tuple[Figure, Animation]]":
+    """
+    Recursively gather the figures in ``obj`` which are accompanied by an
+    :class:`Animation`, each paired with its animation.
+    """
+    result = []
+    for descendant in _descendants(obj):
+        if isinstance(descendant, Figure) and descendant.animation is not None:
+            result.append((descendant, descendant.animation))
+    return result
+
+
 class Figure(
     pylatex.Figure,
 ):
+    """
+    A figure, holding images and a caption.
+
+    Parameters
+    ----------
+    label
+        The label used to reference this figure, which also names the images
+        generated for it.
+    position
+        The placement specifier of the LaTeX float, such as ``"ht"``.
+    animation
+        A movie to accompany this figure.
+        If given, the images of this figure are its still frames, which the
+        AASTeX ``interactive`` environment tags as standing in for the movie.
+    kwargs
+        Additional keyword arguments passed to :class:`pylatex.Figure`.
+    """
+
     marker_prefix = "fig"
     # separate_paragraph = False
 
@@ -810,6 +915,8 @@ class Figure(
         self,
         label: str | Label,
         position: None | str = None,
+        *,
+        animation: None | Animation = None,
         **kwargs,
     ):
         super().__init__(
@@ -817,7 +924,9 @@ class Figure(
             **kwargs,
         )
         self.label = label
+        self.animation = animation
         self._aastex_images: list[Image] = []
+        self._aastex_caption_index: None | int = None
 
     @property
     def images(self) -> list[Image]:
@@ -946,8 +1055,62 @@ class Figure(
         )
 
     def add_caption(self, caption) -> None:
+        """
+        Add a caption to this figure, followed by its label.
+
+        If this figure has an :attr:`animation` with a
+        :attr:`~Animation.url`, a sentence linking to the movie is added to
+        the end of the caption.
+
+        Parameters
+        ----------
+        caption
+            The text of the caption, which is escaped unless it is a
+            :class:`NoEscape` string.
+        """
+        animation = self.animation
+        if animation is not None and animation.url is not None:
+            self.packages.append(Package("url"))
+            caption = NoEscape(
+                pylatex.utils.dumps_list([caption])
+                + rf" The animation can be watched at \url{{{animation.url}}}."
+            )
+        self._aastex_caption_index = len(self)
         super().add_caption(caption)
         self.append(self._label)
+
+    def dumps_content(self, **kwargs) -> str:
+        """
+        Represent the contents of this figure as a string in LaTeX syntax.
+
+        If this figure has an :attr:`animation`, everything before the caption
+        is wrapped in the AASTeX ``interactive`` environment, which marks it
+        as the still frames standing in for the movie.
+        """
+        if self.animation is None:
+            return super().dumps_content(**kwargs)
+
+        index = self._aastex_caption_index
+        if index is None:
+            index = len(self)
+
+        def dumps(items: list) -> str:
+            return pylatex.utils.dumps_list(
+                items,
+                escape=self.escape,
+                token=self.content_separator,
+                **kwargs,
+            )
+
+        stills = dumps(self.data[:index])
+        rest = dumps(self.data[index:])
+
+        return (
+            rf"\begin{{interactive}}{{animation}}{{{self.animation.name}}}"
+            f"{self.content_separator}{stills}{self.content_separator}"
+            rf"\end{{interactive}}"
+            f"{self.content_separator}{rest}"
+        )
 
 
 class FigureStar(
@@ -1177,6 +1340,14 @@ class Document(pylatex.Document):
         """
         return _images(self)
 
+    @property
+    def animations(self) -> list[Animation]:
+        """
+        Every movie accompanying a figure in this document, in the order they
+        appear.
+        """
+        return [animation for _, animation in _animated_figures(self)]
+
     def generate_pdf(
         self,
         filepath: None | str | pathlib.Path = None,
@@ -1199,6 +1370,8 @@ class Document(pylatex.Document):
         Every image in this document is also saved into the build directory,
         so that the build directory contains everything needed to compile the
         ``.tex`` file.
+        Every :class:`Animation` is copied there too, so that the movies sit
+        beside the PDF and can be published with it.
 
         Parameters
         ----------
@@ -1248,6 +1421,14 @@ class Document(pylatex.Document):
             seen[image.name] = image
             image.write(directory)
 
+        movies = {}
+        for animation in self.animations:
+            other = movies.get(animation.name)
+            if other is not None and other.source != animation.source:
+                raise ValueError(f"two different movies are named {animation.name!r}")
+            movies[animation.name] = animation
+            animation.write(directory)
+
         try:
             super().generate_pdf(
                 filepath=filepath,
@@ -1280,6 +1461,14 @@ class Document(pylatex.Document):
         and it contains the ``.tex`` file, the ``.bbl`` file required by the
         AAS conversion software, the AASTeX class and bibliography style
         files, the ORCID logo, and every image in this document.
+
+        The journals ask for the movie of each animated figure to be uploaded
+        separately, as a zip archive named after the number of the figure,
+        such as ``fig01anim.zip``, so each :class:`Animation` is packed into an
+        archive of its own beside the main one.
+        The number of each figure is read from the ``.aux`` file left by the
+        compiler, and the label of the figure is used instead if the ``.aux``
+        file does not record it.
 
         Parameters
         ----------
@@ -1343,7 +1532,29 @@ class Document(pylatex.Document):
         else:
             raise ValueError(f"unrecognized format {format!r}")
 
+        numbers = _label_numbers(filepath.with_suffix(".aux"))
+        for figure, animation in _animated_figures(self):
+            marker = figure._label.marker
+            number = numbers.get(marker.dumps(), marker.name)
+            if number.isdigit():
+                number = f"{int(number):02}"
+            movie = directory / animation.name
+            path = directory / f"fig{number}anim.zip"
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+                archive.write(movie, arcname=movie.name)
+
         return result
+
+
+def _label_numbers(aux: pathlib.Path) -> dict[str, str]:
+    """
+    The number LaTeX gave each label, as recorded in the ``.aux`` file of a
+    compiled document, or nothing if there is no ``.aux`` file.
+    """
+    if not aux.exists():
+        return {}
+    text = aux.read_text(encoding="utf-8", errors="replace")
+    return dict(re.findall(r"\\newlabel\{(.+?)\}\{\{(.*?)\}", text))
 
 
 class Bibliography(pylatex.base_classes.CommandBase):
