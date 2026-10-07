@@ -236,6 +236,46 @@ Pass ``format="gztar"`` for a ``.tar.gz`` archive instead of a ``.zip``.
 
 |
 
+Animated figures
+================
+
+The AAS journals can accompany a figure with a movie, which they play in the
+online version of the article in place of the still frames printed in the PDF.
+Nothing else plays it: not the compiled PDF, and not the HTML version of the
+article made by arXiv.
+So until the article is published, the movie can only be watched wherever its
+authors have put it.
+
+Give the figure an :class:`aastex.Animation`, and add its still frames as usual.
+If the animation has a ``url``, the caption ends with a link to it, so that
+readers of a draft can find the movie.
+
+.. code-block:: python
+
+    figure = aastex.Figure(
+        "evolution",
+        animation=aastex.Animation(
+            source="evolution.mp4",
+            url="https://example.org/article/evolution.mp4",
+        ),
+    )
+    figure.add_image("evolution.pdf", width=None)
+    figure.add_caption(
+        "The evolution of the event. "
+        "The animation runs for 30 seconds and shows the whole event."
+    )
+
+The journals ask the caption to describe what the animation shows, how long it
+runs, and how it changes, rather than only saying that it exists.
+:meth:`aastex.Document.generate_pdf` copies each movie beside the PDF, so a
+draft and its movies can be published together.
+:meth:`aastex.Document.generate_archive` leaves the movies out of the main
+archive and packs each into an archive of its own, named after the number of its
+figure, such as ``fig01anim.zip``, since the journals ask for them to be
+uploaded separately.
+
+|
+
 Citation
 ========
 

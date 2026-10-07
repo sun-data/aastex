@@ -1153,6 +1153,243 @@ def test_document_images_gridline(tmp_path: pathlib.Path):
     assert [i.name for i in doc.images] == ["diagram.pdf"]
 
 
+def _movie(directory: pathlib.Path, name: str = "movie.mp4") -> pathlib.Path:
+    """A stand-in for a movie file, since nothing here plays it."""
+    result = directory / name
+    result.write_bytes(b"not really a movie")
+    return result
+
+
+def _animated_figure(
+    movie: pathlib.Path,
+    url: None | str = "https://example.org/movie.mp4",
+    label: str = "myFigure",
+    caption: None | str = "The evolution of the event.",
+) -> aastex.Figure:
+    """A figure with a single still and a movie, for the tests below."""
+    result = aastex.Figure(
+        label,
+        animation=aastex.Animation(source=movie, url=url),
+    )
+    fig, ax = plt.subplots()
+    ax.plot(np.random.normal(size=11))
+    result.add_fig(fig, width=None)
+    plt.close(fig)
+    if caption is not None:
+        result.add_caption(caption)
+    return result
+
+
+def test_animation(tmp_path: pathlib.Path):
+    movie = _movie(tmp_path)
+    a = aastex.Animation(source=str(movie), url="https://example.org/movie.mp4")
+
+    assert a.source == movie.resolve()
+    assert a.name == "movie.mp4"
+
+    destination = tmp_path / "build"
+    destination.mkdir()
+
+    assert a.write(destination) == destination / "movie.mp4"
+    assert (destination / "movie.mp4").read_bytes() == movie.read_bytes()
+
+
+def test_figure_animation(tmp_path: pathlib.Path):
+    """The still is tagged as standing in for the movie, and the caption is not."""
+    a = _animated_figure(_movie(tmp_path))
+    result = a.dumps()
+
+    begin = result.index(r"\begin{interactive}{animation}{movie.mp4}")
+    end = result.index(r"\end{interactive}")
+
+    assert begin < result.index(r"\includegraphics") < end
+    assert end < result.index(r"\caption")
+    assert end < result.index(r"\label{fig:myFigure}")
+
+
+def test_figure_animation_url(tmp_path: pathlib.Path):
+    """The caption links to wherever the movie can be watched."""
+    a = _animated_figure(_movie(tmp_path), caption="The evolution & the end.")
+    result = a.dumps()
+
+    assert r"The evolution \& the end." in result
+    assert r"\url{https://example.org/movie.mp4}" in result
+    assert result.index(r"\url") > result.index(r"\caption")
+    assert any(p.arguments._positional_args == ["url"] for p in a.packages)
+
+
+def test_figure_animation_url_noescape(tmp_path: pathlib.Path):
+    """A caption written in LaTeX is left alone when the link is added."""
+    a = _animated_figure(
+        _movie(tmp_path),
+        caption=aastex.NoEscape(r"The evolution of \textit{the event}."),
+    )
+
+    assert r"The evolution of \textit{the event}." in a.dumps()
+
+
+def test_figure_animation_no_url(tmp_path: pathlib.Path):
+    """Without a URL there is nowhere to link to."""
+    a = _animated_figure(_movie(tmp_path), url=None)
+    result = a.dumps()
+
+    assert r"\begin{interactive}" in result
+    assert r"\url" not in result
+    assert not any(p.arguments._positional_args == ["url"] for p in a.packages)
+
+
+def test_figure_animation_no_caption(tmp_path: pathlib.Path):
+    """A figure without a caption is wrapped whole."""
+    a = _animated_figure(_movie(tmp_path), caption=None)
+    result = a.dumps()
+
+    assert result.index(r"\includegraphics") < result.index(r"\end{interactive}")
+
+
+def test_figure_without_animation():
+    """An ordinary figure is not tagged."""
+    assert r"\begin{interactive}" not in _figure_with_plot().dumps()
+
+
+def test_figurestar_animation(tmp_path: pathlib.Path):
+    a = aastex.FigureStar(
+        "wide",
+        animation=aastex.Animation(source=_movie(tmp_path)),
+    )
+
+    assert a.animation is not None
+    assert r"\begin{figure*}" in a.dumps()
+    assert r"\begin{interactive}{animation}{movie.mp4}" in a.dumps()
+
+
+def test_document_animations(tmp_path: pathlib.Path):
+    first = _animated_figure(_movie(tmp_path, "first.mp4"), label="first")
+    second = _animated_figure(_movie(tmp_path, "second.mp4"), label="second")
+
+    section = aastex.Section("A section")
+    section.append(first)
+    section.append(_figure_with_plot())
+    section.append(second)
+
+    doc = aastex.Document()
+    doc.append(section)
+
+    assert [a.name for a in doc.animations] == ["first.mp4", "second.mp4"]
+
+
+def test_generate_pdf_animations(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+):
+    """The movies are copied beside the PDF, so that they can be published with it."""
+    doc = aastex.Document()
+    doc.append(_animated_figure(_movie(tmp_path)))
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+    build = tmp_path / "build"
+    doc.generate_pdf(build / "article")
+
+    assert (build / "movie.mp4").exists()
+
+
+def test_generate_pdf_duplicate_movie(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+):
+    """Two different movies with the same name would overwrite each other."""
+    doc = aastex.Document()
+    for label in ("first", "second"):
+        directory = tmp_path / label
+        directory.mkdir()
+        doc.append(_animated_figure(_movie(directory), label=label))
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+    with pytest.raises(ValueError, match="movie.mp4"):
+        doc.generate_pdf(tmp_path / "build" / "article")
+
+
+def test_generate_pdf_repeated_movie(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+):
+    """The same movie may accompany more than one figure."""
+    movie = _movie(tmp_path)
+    doc = aastex.Document()
+    for label in ("first", "second"):
+        doc.append(_animated_figure(movie, label=label))
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", lambda *a, **k: None)
+
+    build = tmp_path / "build"
+    doc.generate_pdf(build / "article")
+
+    assert (build / "movie.mp4").exists()
+
+
+@pytest.mark.parametrize(
+    argnames="aux,name",
+    argvalues=[
+        (None, "figanimatedanim.zip"),
+        ("\\newlabel{fig:animated}{{3}{2}{caption}{figure.3}{}}\n", "fig03anim.zip"),
+        ("\\newlabel{fig:animated}{{A1}{9}{caption}{figure.A1}{}}\n", "figA1anim.zip"),
+    ],
+)
+def test_generate_archive_animation(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    aux: None | str,
+    name: str,
+):
+    """
+    Each movie goes in an archive of its own, named after the number of its
+    figure, and not in the main archive.
+    """
+    doc = _submittable_document()
+    doc.append(_animated_figure(_movie(tmp_path), label="animated"))
+
+    def compile(self, filepath, **kwargs):
+        filepath = pathlib.Path(filepath)
+        filepath.with_suffix(".tex").write_text("a compiled document")
+        filepath.with_suffix(".bbl").write_text("a formatted bibliography")
+        if aux is not None:
+            filepath.with_suffix(".aux").write_text(aux)
+
+    monkeypatch.setattr(pylatex.Document, "generate_pdf", compile)
+
+    build = tmp_path / "build"
+    archive = doc.generate_archive(build / "article")
+
+    with zipfile.ZipFile(archive) as f:
+        assert "movie.mp4" not in f.namelist()
+
+    with zipfile.ZipFile(build / name) as f:
+        assert f.namelist() == ["movie.mp4"]
+
+
+@pytest.mark.skipif(
+    shutil.which("latexmk") is None,
+    reason="requires a LaTeX installation",
+)
+def test_generate_archive_animation_compiles(tmp_path: pathlib.Path):
+    """
+    The interactive environment compiles, and the figure number is read back.
+
+    The other figure of this document has no caption, so it is not numbered,
+    and the animated figure is the first.
+    """
+    doc = _submittable_document()
+    doc.append(_animated_figure(_movie(tmp_path), label="animated"))
+
+    build = tmp_path / "build"
+    doc.generate_archive(build / "article")
+
+    assert (build / "article.pdf").exists()
+    assert (build / "fig01anim.zip").exists()
+    assert not (build / "figanimatedanim.zip").exists()
+
+
 @pytest.mark.parametrize(
     argnames="a",
     argvalues=[
