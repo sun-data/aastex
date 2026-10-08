@@ -281,17 +281,15 @@ class Software(pylatex.base_classes.LatexObject):
     archive of the version the article was built with.
     """
 
-    names: "list[str | PythonPackage]"
+    names: "list[str | pylatex.base_classes.LatexObject]"
     """
     The software packages, one entry each.
     Each is either the text of the entry, such as ``r"astropy \\citep{astropy}"``,
-    or a :class:`PythonPackage`.
+    or a LaTeX object which writes one, such as a :class:`PythonPackage`.
     """
 
     def dumps(self) -> str:
-        names = ", ".join(
-            n.dumps() if isinstance(n, PythonPackage) else str(n) for n in self.names
-        )
+        names = ", ".join(n if isinstance(n, str) else n.dumps() for n in self.names)
         return pylatex.Command("software", NoEscape(names)).dumps()
 
 
@@ -909,7 +907,9 @@ def _python_packages(obj: object) -> list[PythonPackage]:
 
 _header_software = (
     "% Written by aastex from the Python packages cited by the article.\n"
-    "% It is rewritten every time the article is built, so do not edit it.\n\n"
+    "% It is rewritten every time the article is built, so do not edit it.\n"
+    "% Each entry is used again for as long as the line above it still\n"
+    "% describes the package, so Zenodo is only asked when that changes.\n\n"
 )
 """
 The first lines of the ``software.bib`` file written by
@@ -917,10 +917,57 @@ The first lines of the ``software.bib`` file written by
 """
 
 
+def _entries_software(text: str) -> dict[str, str]:
+    """
+    The BibTeX entries in a ``software.bib`` file written by
+    :meth:`Document.generate_pdf`, keyed by the line above each, which
+    describes the citation it is.
+
+    Parameters
+    ----------
+    text
+        The contents of the file.
+    """
+    pattern = r"^% ([^\n]+)\n(@.*?\n\}\n)"
+    return dict(re.findall(pattern, text, flags=re.MULTILINE | re.DOTALL))
+
+
+def _sources_bibliography(tex: str) -> list[str]:
+    r"""
+    The names of the BibTeX files read by the ``\bibliography`` commands in
+    some LaTeX, without their extension, however the commands were written.
+
+    Parameters
+    ----------
+    tex
+        The LaTeX source.
+    """
+    tex = re.sub(r"(?<!\\)%.*", "", tex)
+    result = []
+    for sources in re.findall(r"\\bibliography\s*\{([^}]*)\}", tex):
+        result += [s.strip().removesuffix(".bib") for s in sources.split(",")]
+    return result
+
+
+_catcodes_url = (
+    r"\catcode`\#=12 \catcode`\%=12 \catcode`\&=12 \catcode`\~=12 "
+    r"\catcode`\_=12 \catcode`\^=12 \catcode`\$=12"
+)
+"""
+Makes the characters which TeX treats specially, but which a URL may
+contain, into ordinary characters, so that a URL can be written as it is.
+"""
+
+
 class _Documentation(pylatex.base_classes.LatexObject):
     r"""
     The ``\docs`` macro, which expands to the URL of the documentation of each
     :class:`PythonPackage` cited by a document, given its key.
+
+    The macro is defined only if the document cites a package, so that it
+    leaves any macro of the same name alone otherwise.
+    A key which no cited package documents stops LaTeX with an error, since
+    it would otherwise make a broken link.
 
     The URLs are found when the document is written, so they follow whatever
     the document cites at that time.
@@ -932,15 +979,39 @@ class _Documentation(pylatex.base_classes.LatexObject):
         """The document whose packages are documented."""
 
     def dumps(self) -> str:
-        urls = {p.key_: p.url_docs for p in self.document.python_packages}
-        lines = [
-            rf"\expandafter\def\csname aastex@docs@{key}\endcsname{{{url}}}"
-            for key, url in urls.items()
-            if url is not None
-        ]
-        if not lines:
+        packages = self.document.python_packages
+        if not packages:
             return ""
-        lines.insert(0, r"\newcommand{\docs}[1]{\csname aastex@docs@#1\endcsname}")
+
+        # the macro has to expand all the way to the URL inside `\href`, so
+        # an unknown key needs an error which can be raised during expansion
+        lines = [
+            r"\ExplSyntaxOn",
+            r"\msg_new:nnn { aastex } { docs } "
+            r"{ The~documentation~of~'#1'~is~not~known.~"
+            r"List~it~as~an~aastex.PythonPackage~in~the~Software~of~the~article. }",
+            r"\cs_new:Npn \docs #1 { \cs_if_exist_use:cF { aastex@docs@#1 } "
+            r"{ \msg_expandable_error:nnn { aastex } { docs } { #1 } } }",
+            r"\ExplSyntaxOff",
+        ]
+
+        definitions = []
+        for package in packages:
+            url = package.url_docs
+            if url is None:
+                continue
+            if re.search(r"[\s\\{}]", url) is not None:
+                raise ValueError(
+                    f"the documentation of {package.name}, {url!r}, is not a URL "
+                    f"which can be written into LaTeX"
+                )
+            definitions.append(
+                rf"\expandafter\gdef\csname aastex@docs@{package.key_}\endcsname"
+                rf"{{{url}}}"
+            )
+        if definitions:
+            lines += [r"\begingroup", _catcodes_url, *definitions, r"\endgroup"]
+
         return "\n".join(lines)
 
 
@@ -1427,26 +1498,15 @@ class Document(pylatex.Document):
         """
         return _python_packages(self)
 
-    def _check_docs(self) -> None:
-        r"""
-        Raise an error if the prose links to the documentation of a package
-        through ``\docs`` which this document does not cite, or which declares
-        no documentation, since LaTeX would quietly make a broken link.
-        """
-        known = {p.key_ for p in self.python_packages if p.url_docs is not None}
-        used = set(re.findall(r"\\docs\{(.*?)\}", self.dumps()))
-        unknown = sorted(used - known)
-        if unknown:
-            raise ValueError(
-                f"the documentation of {unknown} is linked to with `\\docs`, "
-                f"but no package with documentation is cited by that key in a "
-                f"`Software` command of this document"
-            )
-
     def _write_software(self, directory: pathlib.Path) -> None:
         """
         Write the BibTeX entry of every :class:`PythonPackage` this document
         cites into ``software.bib`` in ``directory``.
+
+        An entry already in the file is used again if it still cites the same
+        version of the same package, so Zenodo is only asked for the entries
+        which changed, and an article whose packages have not changed can be
+        rebuilt without it.
 
         Parameters
         ----------
@@ -1457,12 +1517,7 @@ class Document(pylatex.Document):
         if not packages:
             return
 
-        sources = [
-            source.strip()
-            for bibliography in _descendants(self)
-            if isinstance(bibliography, Bibliography)
-            for source in bibliography.sources.split(",")
-        ]
+        sources = _sources_bibliography(self.dumps())
         if "software" not in sources:
             raise ValueError(
                 "the Python packages in this document are cited from "
@@ -1470,15 +1525,39 @@ class Document(pylatex.Document):
                 "bibliography, as in `aastex.Bibliography('sources,software')`"
             )
 
+        for source in sources:
+            path = directory / f"{source}.bib"
+            if source == "software" or not path.exists():
+                continue
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for package in packages:
+                key = re.escape(package.key_)
+                if re.search(rf"@\s*\w+\s*[{{(]\s*{key}\s*,", text, re.IGNORECASE):
+                    raise ValueError(
+                        f"the key {package.key_!r} of {package.name} is already "
+                        f"used in {path}, so give the package another `key`, or "
+                        f"remove that entry"
+                    )
+
         path = directory / "software.bib"
+        entries = {}
         if path.exists():
-            if not path.read_text(encoding="utf-8").startswith(_header_software):
+            text = path.read_text(encoding="utf-8")
+            if not text.startswith(_header_software):
                 raise FileExistsError(
                     f"{path} was not written by aastex, so it is not overwritten"
                 )
+            entries = _entries_software(text)
 
-        entries = "\n".join(p.bibtex() for p in packages)
-        path.write_text(_header_software + entries, encoding="utf-8")
+        chunks = []
+        for package in packages:
+            identity = package._identity()
+            entry = entries.get(identity)
+            if entry is None:
+                entry = package.bibtex()
+            chunks.append(f"% {identity}\n{entry}")
+
+        path.write_text(_header_software + "\n".join(chunks), encoding="utf-8")
 
     def generate_pdf(
         self,
@@ -1506,9 +1585,9 @@ class Document(pylatex.Document):
         beside the PDF and can be published with it.
 
         The BibTeX entry of every :class:`PythonPackage` in :attr:`python_packages`
-        is written into ``software.bib`` there, which looks up the archive of
-        each package on Zenodo, so the article cites the versions it was built
-        with.
+        is written into ``software.bib`` there, citing the archive on Zenodo of
+        the version the article was built with.
+        Zenodo is only asked for the entries which changed since the last build.
 
         Parameters
         ----------
@@ -1537,7 +1616,6 @@ class Document(pylatex.Document):
         directory = filepath.parent
         directory.mkdir(parents=True, exist_ok=True)
 
-        self._check_docs()
         self._write_software(directory)
 
         copies = []
@@ -1721,5 +1799,3 @@ class Bibliography(pylatex.base_classes.CommandBase):
         super().__init__(
             arguments=sources,
         )
-        self.sources = sources
-        """The names of the BibTeX files, separated by commas."""

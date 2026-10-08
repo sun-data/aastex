@@ -306,12 +306,21 @@ the version used with the macro ``\docs{optika}``:
     \href{\docs{optika}/_autosummary/optika.sensors.signal.html}{\texttt{optika.sensors.signal()}}
     \citep{optika}.
 
+A key which no listed package documents stops LaTeX with an error, rather than
+making a broken link.
+
 :meth:`aastex.Document.generate_pdf` writes the BibTeX entry of each package
 into ``software.bib`` beside the article.
 A release is cited by the DOI of its own archive on Zenodo, and a development
 version by the concept DOI, which resolves to the latest release.
+Each entry is reused by later builds for as long as the version stays the same,
+so Zenodo is only asked when a version changes, and an unchanged article can be
+rebuilt offline.
+
 On Read the Docs, ``\docs`` links a release ``X.Y.Z`` to the documentation of
 the tag ``vX.Y.Z``, and anything else to the latest documentation.
+A package whose tags have no ``v``, or some other prefix, needs it given as
+``tag_prefix``.
 
 For this to work, the package declares where its documentation is, and the
 concept DOI it is archived under on Zenodo, in its ``pyproject.toml``:
