@@ -20,6 +20,7 @@ from pylatex import (
     Ref,
 )
 from . import _formatting
+from ._python_packages import PythonPackage
 
 __all__ = [
     "Command",
@@ -276,13 +277,22 @@ class Software(pylatex.base_classes.LatexObject):
 
     The AAS journals ask that software be cited like any other work, so each
     entry is usually a name followed by a citation.
+    A :class:`PythonPackage` is written that way for you, and is cited by the
+    archive of the version the article was built with.
     """
 
-    names: list[str]
-    """The software packages, one entry each."""
+    names: "list[str | PythonPackage]"
+    """
+    The software packages, one entry each.
+    Each is either the text of the entry, such as ``r"astropy \\citep{astropy}"``,
+    or a :class:`PythonPackage`.
+    """
 
     def dumps(self) -> str:
-        return pylatex.Command("software", NoEscape(", ".join(self.names))).dumps()
+        names = ", ".join(
+            n.dumps() if isinstance(n, PythonPackage) else str(n) for n in self.names
+        )
+        return pylatex.Command("software", NoEscape(names)).dumps()
 
 
 @dataclasses.dataclass
@@ -875,6 +885,65 @@ def _images(obj: object) -> list[Image]:
     return result
 
 
+def _python_packages(obj: object) -> list[PythonPackage]:
+    """
+    Recursively gather every :class:`PythonPackage` listed in a
+    :class:`Software` command of ``obj`` and its children, once each,
+    in the order they appear.
+    """
+    result = {}
+    for descendant in _descendants(obj):
+        if not isinstance(descendant, Software):
+            continue
+        for package in descendant.names:
+            if not isinstance(package, PythonPackage):
+                continue
+            other = result.get(package.key_)
+            if other is not None and other != package:
+                raise ValueError(
+                    f"two different packages are cited as {package.key_!r}"
+                )
+            result[package.key_] = package
+    return list(result.values())
+
+
+_header_software = (
+    "% Written by aastex from the Python packages cited by the article.\n"
+    "% It is rewritten every time the article is built, so do not edit it.\n\n"
+)
+"""
+The first lines of the ``software.bib`` file written by
+:meth:`Document.generate_pdf`, which mark it as safe to overwrite.
+"""
+
+
+class _Documentation(pylatex.base_classes.LatexObject):
+    r"""
+    The ``\docs`` macro, which expands to the URL of the documentation of each
+    :class:`PythonPackage` cited by a document, given its key.
+
+    The URLs are found when the document is written, so they follow whatever
+    the document cites at that time.
+    """
+
+    def __init__(self, document: "Document") -> None:
+        super().__init__()
+        self.document = document
+        """The document whose packages are documented."""
+
+    def dumps(self) -> str:
+        urls = {p.key_: p.url_docs for p in self.document.python_packages}
+        lines = [
+            rf"\expandafter\def\csname aastex@docs@{key}\endcsname{{{url}}}"
+            for key, url in urls.items()
+            if url is not None
+        ]
+        if not lines:
+            return ""
+        lines.insert(0, r"\newcommand{\docs}[1]{\csname aastex@docs@#1\endcsname}")
+        return "\n".join(lines)
+
+
 def _animated_figures(obj: object) -> "list[tuple[Figure, Animation]]":
     """
     Recursively gather the figures in ``obj`` which are accompanied by an
@@ -1299,6 +1368,8 @@ class Document(pylatex.Document):
                 pylatex.Command("bibliographystyle", bibliographystyle)
             )
 
+        self.preamble.append(_Documentation(self))
+
     def set_variable_quantity(
         self,
         name: str,
@@ -1348,6 +1419,67 @@ class Document(pylatex.Document):
         """
         return [animation for _, animation in _animated_figures(self)]
 
+    @property
+    def python_packages(self) -> list[PythonPackage]:
+        """
+        Every :class:`PythonPackage` listed in a :class:`Software` command of
+        this document, in the order they appear.
+        """
+        return _python_packages(self)
+
+    def _check_docs(self) -> None:
+        r"""
+        Raise an error if the prose links to the documentation of a package
+        through ``\docs`` which this document does not cite, or which declares
+        no documentation, since LaTeX would quietly make a broken link.
+        """
+        known = {p.key_ for p in self.python_packages if p.url_docs is not None}
+        used = set(re.findall(r"\\docs\{(.*?)\}", self.dumps()))
+        unknown = sorted(used - known)
+        if unknown:
+            raise ValueError(
+                f"the documentation of {unknown} is linked to with `\\docs`, "
+                f"but no package with documentation is cited by that key in a "
+                f"`Software` command of this document"
+            )
+
+    def _write_software(self, directory: pathlib.Path) -> None:
+        """
+        Write the BibTeX entry of every :class:`PythonPackage` this document
+        cites into ``software.bib`` in ``directory``.
+
+        Parameters
+        ----------
+        directory
+            The directory the document is built in.
+        """
+        packages = self.python_packages
+        if not packages:
+            return
+
+        sources = [
+            source.strip()
+            for bibliography in _descendants(self)
+            if isinstance(bibliography, Bibliography)
+            for source in bibliography.sources.split(",")
+        ]
+        if "software" not in sources:
+            raise ValueError(
+                "the Python packages in this document are cited from "
+                "`software.bib`, which needs to be one of the sources of its "
+                "bibliography, as in `aastex.Bibliography('sources,software')`"
+            )
+
+        path = directory / "software.bib"
+        if path.exists():
+            if not path.read_text(encoding="utf-8").startswith(_header_software):
+                raise FileExistsError(
+                    f"{path} was not written by aastex, so it is not overwritten"
+                )
+
+        entries = "\n".join(p.bibtex() for p in packages)
+        path.write_text(_header_software + entries, encoding="utf-8")
+
     def generate_pdf(
         self,
         filepath: None | str | pathlib.Path = None,
@@ -1372,6 +1504,11 @@ class Document(pylatex.Document):
         ``.tex`` file.
         Every :class:`Animation` is copied there too, so that the movies sit
         beside the PDF and can be published with it.
+
+        The BibTeX entry of every :class:`PythonPackage` in :attr:`python_packages`
+        is written into ``software.bib`` there, which looks up the archive of
+        each package on Zenodo, so the article cites the versions it was built
+        with.
 
         Parameters
         ----------
@@ -1399,6 +1536,9 @@ class Document(pylatex.Document):
 
         directory = filepath.parent
         directory.mkdir(parents=True, exist_ok=True)
+
+        self._check_docs()
+        self._write_software(directory)
 
         copies = []
         for source in self.class_files:
@@ -1512,6 +1652,9 @@ class Document(pylatex.Document):
         if bibliography is not None:
             members.append(pathlib.Path(bibliography))
 
+        if self.python_packages:
+            members.append(directory / "software.bib")
+
         missing = [m for m in members if not m.exists()]
         if missing:
             raise FileNotFoundError(
@@ -1558,10 +1701,25 @@ def _label_numbers(aux: pathlib.Path) -> dict[str, str]:
 
 
 class Bibliography(pylatex.base_classes.CommandBase):
+    """
+    The bibliography of an article, read from the BibTeX files beside it.
+
+    Parameters
+    ----------
+    sources
+        The names of the BibTeX files, without the ``.bib`` extension,
+        separated by commas.
+        A document which cites a :class:`PythonPackage` must include
+        ``software``, the file :meth:`Document.generate_pdf` writes the
+        entries of the packages into, as in ``"sources,software"``.
+    """
+
     def __init__(
         self,
         sources: str,
-    ):
+    ) -> None:
         super().__init__(
             arguments=sources,
         )
+        self.sources = sources
+        """The names of the BibTeX files, separated by commas."""

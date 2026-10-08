@@ -40,6 +40,7 @@ doc = [
 [project.urls]
 Homepage = "https://github.com/sun-data/aastex"
 Documentation = "https://aastex.readthedocs.io/en/latest"
+DOI = "https://doi.org/10.5281/zenodo.23108302"
 
 [tool.setuptools_scm]
 
