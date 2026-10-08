@@ -54,6 +54,7 @@ bibliography.
 import pylatex
 
 from ._formatting import *
+from ._python_packages import *
 from ._aastex import *
 
 text_width_inches = 513.11743 / 72

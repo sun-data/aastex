@@ -276,6 +276,69 @@ uploaded separately.
 
 |
 
+Citing software
+===============
+
+An article built by a program depends on particular versions of the packages it
+uses, and later versions rename and remove what the article describes.
+So the article should cite the version it was built with, and link to the
+documentation of that version.
+An :class:`aastex.PythonPackage` does both, reading everything it needs from the
+metadata of the installed package, so the citation and the links follow
+whatever version the article is built with.
+
+List each package in the :class:`aastex.Software` command the AAS journals ask
+for, and add ``software`` to the sources of the bibliography:
+
+.. code-block:: python
+
+    optika = aastex.PythonPackage("optika")
+
+    doc.append(aastex.Software([optika, r"astropy \citep{astropy}"]))
+    doc.append(aastex.Bibliography("sources,software"))
+
+Then cite the package with ``\citep{optika}``, and link to the documentation of
+the version used with the macro ``\docs{optika}``:
+
+.. code-block:: latex
+
+    The model is implemented by
+    \href{\docs{optika}/_autosummary/optika.sensors.signal.html}{\texttt{optika.sensors.signal()}}
+    \citep{optika}.
+
+A key which no listed package documents stops LaTeX with an error, rather than
+making a broken link.
+
+:meth:`aastex.Document.generate_pdf` writes the BibTeX entry of each package
+into ``software.bib`` beside the article.
+A release is cited by the DOI of its own archive on Zenodo, and a development
+version by the concept DOI, which resolves to the latest release.
+Each entry is reused by later builds for as long as the version stays the same,
+so Zenodo is only asked when a version changes, and an unchanged article can be
+rebuilt offline.
+
+On Read the Docs, ``\docs`` links a release ``X.Y.Z`` to the documentation of
+the tag ``vX.Y.Z``, and anything else to the latest documentation.
+A package whose tags have no ``v``, or some other prefix, needs it given as
+``tag_prefix``.
+
+For this to work, the package declares where its documentation is, and the
+concept DOI it is archived under on Zenodo, in its ``pyproject.toml``:
+
+.. code-block:: toml
+
+    [project.urls]
+    Documentation = "https://optika.readthedocs.io/en/latest"
+    DOI = "https://doi.org/10.5281/zenodo.23074621"
+
+Its Read the Docs project also needs an automation rule which activates every
+new tag matching *SemVer versions*, since Read the Docs only builds the
+versions which are active.
+A package which declares no DOI, or a release made before it did, can be given
+one with ``aastex.PythonPackage("optika", doi="10.5281/zenodo.23074621")``.
+
+|
+
 Citation
 ========
 
@@ -293,7 +356,10 @@ always resolves to the latest version,
 and the Zenodo page lists the DOI of every version.
 Please include the version of :mod:`aastex` that you used,
 which is given by ``importlib.metadata.version("aastex")``.
-The BibTeX entry below uses the concept DOI.
+An article written with :mod:`aastex` can cite the version it was built with
+by listing ``aastex.PythonPackage("aastex")`` in its :class:`aastex.Software`,
+as described in `Citing software`_.
+Otherwise, the BibTeX entry below uses the concept DOI.
 To cite a specific version instead,
 replace ``doi`` with the DOI of that version.
 
