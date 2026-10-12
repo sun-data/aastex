@@ -1,8 +1,10 @@
 import pathlib
+import re
 import shutil
 import subprocess
 import tarfile
 import zipfile
+import zlib
 
 import pytest
 import pylatex
@@ -1208,14 +1210,37 @@ def test_figure_animation(tmp_path: pathlib.Path):
 
 
 def test_figure_animation_url(tmp_path: pathlib.Path):
-    """The caption links to wherever the movie can be watched."""
+    """
+    The caption links to wherever the movie can be watched, without printing
+    the address.
+    """
     a = _animated_figure(_movie(tmp_path), caption="The evolution & the end.")
     result = a.dumps()
 
-    assert r"The evolution \& the end." in result
-    assert r"\url{https://example.org/movie.mp4}" in result
-    assert result.index(r"\url") > result.index(r"\caption")
-    assert any(p.arguments._positional_args == ["url"] for p in a.packages)
+    caption = result[result.index(r"\caption") :]
+    assert r"The evolution \& the end. The animation can be" in caption
+    assert r"\endcsname{fig:myFigure}{watched online}." in caption
+    assert "https://example.org/movie.mp4" not in caption
+
+    definition = r"\csname aastex@animation@fig:myFigure\endcsname"
+    definition += "{https://example.org/movie.mp4}"
+    assert result.index(r"\end{interactive}") < result.index(definition)
+    assert result.index(definition) < result.index(r"\caption")
+    assert not any(p.arguments._positional_args == ["url"] for p in a.packages)
+
+
+@pytest.mark.parametrize(
+    argnames="url",
+    argvalues=[
+        "https://example.org/a movie.mp4",
+        "https://example.org/a\\movie.mp4",
+        "https://example.org/{movie}.mp4",
+    ],
+)
+def test_figure_animation_url_invalid(tmp_path: pathlib.Path, url: str):
+    """A URL which cannot be written into LaTeX is refused."""
+    with pytest.raises(ValueError, match="movie.mp4"):
+        _animated_figure(_movie(tmp_path), url=url)
 
 
 def test_figure_animation_url_noescape(tmp_path: pathlib.Path):
@@ -1234,8 +1259,8 @@ def test_figure_animation_no_url(tmp_path: pathlib.Path):
     result = a.dumps()
 
     assert r"\begin{interactive}" in result
-    assert r"\url" not in result
-    assert not any(p.arguments._positional_args == ["url"] for p in a.packages)
+    assert "aastex@animation" not in result
+    assert "watched online" not in result
 
 
 def test_figure_animation_no_caption(tmp_path: pathlib.Path):
@@ -1388,6 +1413,42 @@ def test_generate_archive_animation_compiles(tmp_path: pathlib.Path):
     assert (build / "article.pdf").exists()
     assert (build / "fig01anim.zip").exists()
     assert not (build / "figanimatedanim.zip").exists()
+
+
+def _uris(pdf: pathlib.Path) -> set[str]:
+    """The targets of the links in a PDF, including those in compressed streams."""
+    data = pdf.read_bytes()
+    pattern = re.compile(rb"/URI\s*\((.*?)\)")
+    result = set(pattern.findall(data))
+    for stream in re.findall(rb"stream\r?\n(.*?)\r?\nendstream", data, re.DOTALL):
+        try:
+            result |= set(pattern.findall(zlib.decompress(stream)))
+        except zlib.error:
+            pass
+    return {uri.decode("latin-1") for uri in result}
+
+
+@pytest.mark.skipif(
+    shutil.which("latexmk") is None,
+    reason="requires a LaTeX installation",
+)
+def test_generate_pdf_animation_url_compiles(tmp_path: pathlib.Path):
+    """
+    Each caption links to its own movie, even through a URL with the
+    characters LaTeX treats specially.
+    """
+    urls = {
+        "first": "https://example.org/~me/a_b#c%20d&e^f$g.mp4",
+        "second": "https://example.org/pr/2/movie.mp4",
+    }
+    doc = aastex.Document()
+    for label, url in urls.items():
+        movie = _movie(tmp_path, f"{label}.mp4")
+        doc.append(_animated_figure(movie, url=url, label=label))
+
+    doc.generate_pdf(tmp_path / "build" / "article")
+
+    assert _uris(tmp_path / "build" / "article.pdf") == set(urls.values())
 
 
 @pytest.mark.parametrize(
