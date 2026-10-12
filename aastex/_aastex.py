@@ -830,7 +830,12 @@ class Animation:
     """
     Where the movie can be watched before the article is published.
 
-    If given, a sentence linking to it is added to the end of the caption.
+    If given, the sentence "The animation can be watched online." is added to
+    the end of the caption, with "watched online" linking here.
+    The address itself is not printed, since a long one would run past the
+    edge of a narrow caption.
+    It may hold any character a URL can, but not whitespace, backslashes, or
+    braces.
     """
 
     def __post_init__(self):
@@ -1208,14 +1213,40 @@ class Figure(
             The text of the caption, which is escaped unless it is a
             :class:`NoEscape` string.
         """
+        self._aastex_caption_index = len(self)
         animation = self.animation
         if animation is not None and animation.url is not None:
-            self.packages.append(Package("url"))
+            url = animation.url
+            if re.search(r"[\s\\{}]", url) is not None:
+                raise ValueError(
+                    f"the URL of the movie {animation.name}, {url!r}, is not a "
+                    f"URL which can be written into LaTeX"
+                )
+            key = self._label.marker.dumps()
+            # The URL is defined outside of the caption, with the characters
+            # which TeX treats specially made ordinary, since the caption is
+            # read as an argument, where they could no longer be.
+            # The link is made by a protected macro, so that wherever the
+            # caption is written out, such as the label of the figure, only
+            # the key of the URL is written and not the URL itself.
+            self.append(
+                NoEscape(
+                    rf"\begingroup{_catcodes_url}"
+                    rf"\expandafter\gdef\csname aastex@animation@{key}\endcsname"
+                    rf"{{{url}}}\endgroup%"
+                )
+            )
+            self.append(
+                NoEscape(
+                    r"\protected\expandafter\gdef\csname aastex@animation\endcsname"
+                    r"#1#2{\href{\csname aastex@animation@#1\endcsname}{#2}}%"
+                )
+            )
             caption = NoEscape(
                 pylatex.utils.dumps_list([caption])
-                + rf" The animation can be watched at \url{{{animation.url}}}."
+                + r" The animation can be"
+                + rf" \csname aastex@animation\endcsname{{{key}}}{{watched online}}."
             )
-        self._aastex_caption_index = len(self)
         super().add_caption(caption)
         self.append(self._label)
 
